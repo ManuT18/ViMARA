@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ui="UnityEngine.UIElements"
+    xmlns:editor="UnityEditor.UIElements"
+    xsi:noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd"
+>
+    <!-- Incluimos los estilos -->
+    <ui:Style src="AppUI.uss" />
+
+    <!-- Container Global que abarca toda la pantalla -->
+    <ui:VisualElement class="screen-container">
+
+        <!-- ========================================== -->
+        <!-- PANTALLA 1: MAIN MENU                      -->
+        <!-- ========================================== -->
+        <ui:VisualElement name="MainMenu" class="panel">
+            <ui:Label text="ViMARA" class="title-label" />
+            <ui:Label text="Visualizador de Maquetas de Arquitectura en Realidad Aumentada" class="subtitle-label" style="font-size: 22px; margin-bottom: 80px;" />
+            <ui:Button name="Btn_EnterApp" text="Iniciar" class="action-button" />
+        </ui:VisualElement>
+
+
+        <!-- ========================================== -->
+        <!-- PANTALLA 2: MODE SELECTION                 -->
+        <!-- ========================================== -->
+        <ui:VisualElement name="ModeSelection" class="panel" style="display: none;">
+            <ui:Label text="Modo de Visualización" class="subtitle-label" />
+            
+            <ui:Button name="Btn_SelectPlane" text="Plano Libre (Escala 1:1)" class="action-button" />
+            <ui:Button name="Btn_SelectMarker" text="Marcador Fijo" class="action-button secondary-button" style="margin-bottom: 50px;" />
+            
+            <!-- Botón opcional para regresar al menú -->
+            <ui:Button name="Btn_Back" text="Atrás" class="action-button secondary-button" style="width: 50%; padding-top: 15px; padding-bottom: 15px; font-size: 20px; background-color: rgb(200, 50, 50);" />
+        </ui:VisualElement>
+
+
+        <!-- ========================================== -->
+        <!-- PANTALLA 3: MODEL IMPORT                   -->
+        <!-- ========================================== -->
+        <ui:VisualElement name="ModelImport" class="panel" style="display: none;">
+            <ui:Label text="Importar Modelo" class="subtitle-label" />
+            <ui:Label text="(Formatos soportados: .gltf, .glb)" style="color: rgb(150, 150, 150); font-size: 20px; margin-bottom: 50px;" />
+            
+            <!-- Botón que abrirá el file picker (próximamente en código) -->
+            <ui:Button name="Btn_OpenFileBrowser" text="Buscar Modelo" class="action-button" style="margin-bottom: 30px;" />
+            
+            <!-- Label que indicará el nombre o estado del archivo cargado -->
+            <ui:Label name="Lbl_FileStatus" text="Ningún archivo seleccionado" style="color: rgb(200, 200, 200); font-size: 22px; margin-bottom: 50px; -unity-font-style: italic;" />
+
+            <!-- Este botón inicia la escena AR real, lo enlazaremos luego -->
+            <ui:Button name="Btn_StartAR" text="Visualizar en AR" class="action-button secondary-button" style="opacity: 0.5;" />
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+
+</ui:UXML>
