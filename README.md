@@ -1,6 +1,11 @@
 # ViMARA
 **Visualizador de Maquetas de Arquitectura en Realidad Aumentada**
 
+![Unity](https://img.shields.io/badge/Unity-100000?style=for-the-badge&logo=unity&logoColor=white)
+![C#](https://img.shields.io/badge/C%23-239120?style=for-the-badge&logo=c-sharp&logoColor=white)
+![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
+![AR Foundation](https://img.shields.io/badge/AR_Foundation-000000?style=for-the-badge&logo=unity&logoColor=white)
+
 ViMARA es una aplicación móvil desarrollada en Unity, diseñada para la visualización interactiva de modelos y maquetas de arquitectura en tamaño real o a escala utilizando Realidad Aumentada (AR). La aplicación busca facilitar la previsualización de proyectos arquitectónicos en entornos del mundo real y ayudar al alumnado de carreras universitarias en preentregas y/o entregas finales de proyectos de las diferentes materias de la carrera.
 
 ## 🚀 Características Principales (En Desarrollo)
@@ -29,4 +34,4 @@ ViMARA es una aplicación móvil desarrollada en Unity, diseñada para la visual
 4. **Fase 4:** Integración de un cargador dinámico de archivos 3D (`.gltf`/`.glb`) desde el dispositivo.
 
 ---
-*Desarrollado como proyecto universitario.*
+*Proyecto desarrollado con el apoyo de la beca universitaria BENTRE25.*
