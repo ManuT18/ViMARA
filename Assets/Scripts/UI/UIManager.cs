@@ -15,7 +15,6 @@ public class UIManager : MonoBehaviour
     private VisualElement modelImportContainer;
 
     // Botones
-    private Button btnEnterApp;
     private Button btnModePlane;
     private Button btnModeMarker;
     private Button btnBackToMenu;
@@ -40,13 +39,12 @@ public class UIManager : MonoBehaviour
         modelImportContainer = root.Q<VisualElement>("ModelImport");
 
         // Búsqueda de Botones
-        btnEnterApp = root.Q<Button>("Btn_EnterApp");
         btnModePlane = root.Q<Button>("Btn_SelectPlane");
         btnModeMarker = root.Q<Button>("Btn_SelectMarker");
         btnBackToMenu = root.Q<Button>("Btn_Back");
 
         // Suscripción a eventos
-        if (btnEnterApp != null) btnEnterApp.clicked += OnEnterAppClicked;
+        if (mainMenuContainer != null) mainMenuContainer.RegisterCallback<PointerDownEvent>(OnEnterAppClicked);
         if (btnModePlane != null) btnModePlane.clicked += OnSelectPlaneClicked;
         if (btnModeMarker != null) btnModeMarker.clicked += OnSelectMarkerClicked;
         if (btnBackToMenu != null) btnBackToMenu.clicked += OnBackToMenuClicked;
@@ -58,7 +56,7 @@ public class UIManager : MonoBehaviour
     private void OnDisable()
     {
         // Cancelar suscripción a eventos para evitar memory leaks
-        if (btnEnterApp != null) btnEnterApp.clicked -= OnEnterAppClicked;
+        if (mainMenuContainer != null) mainMenuContainer.UnregisterCallback<PointerDownEvent>(OnEnterAppClicked);
         if (btnModePlane != null) btnModePlane.clicked -= OnSelectPlaneClicked;
         if (btnModeMarker != null) btnModeMarker.clicked -= OnSelectMarkerClicked;
         if (btnBackToMenu != null) btnBackToMenu.clicked -= OnBackToMenuClicked;
@@ -81,7 +79,7 @@ public class UIManager : MonoBehaviour
 
     // --- Métodos de Acción ---
 
-    private void OnEnterAppClicked()
+    private void OnEnterAppClicked(PointerDownEvent evt)
     {
         Debug.Log("Entrando a ViMARA...");
         ShowView(modeSelectionContainer);

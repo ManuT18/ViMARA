@@ -9,30 +9,39 @@
 
 /* Títulos principales */
 .title-label {
-    font-size: 60px;
+    font-size: 150px;
     -unity-font-style: bold;
     color: rgb(255, 255, 255);
-    margin-bottom: 60px;
+    margin-bottom: 100px;
     letter-spacing: 5px;
 }
 
 .subtitle-label {
-    font-size: 30px;
+    font-size: 50px;
+    width: 99%;
     -unity-font-style: bold;
     color: rgb(200, 200, 200);
-    margin-bottom: 50px;
+    margin-bottom: 100px;
+    white-space: normal;
+    -unity-text-align: middle-center;
+}
+
+.tap-to-start-label {
+    font-size: 35px;
+    -unity-font-style: italic;
+    color: rgb(150, 150, 150);
 }
 
 /* Estilo Base para los Botones */
 .action-button {
-    font-size: 30px;
+    font-size: 50px;
     color: rgb(255, 255, 255);
     background-color: rgb(45, 122, 255);
     border-radius: 15px;
     padding-top: 20px;
     padding-bottom: 20px;
-    width: 100%;
-    max-width: 600px;
+    width: 70%;
+    max-width: 75%;
     margin-top: 15px;
     margin-bottom: 15px;
     border-width: 0;

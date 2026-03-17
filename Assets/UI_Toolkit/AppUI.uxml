@@ -16,8 +16,8 @@
         <!-- ========================================== -->
         <ui:VisualElement name="MainMenu" class="panel">
             <ui:Label text="ViMARA" class="title-label" />
-            <ui:Label text="Visualizador de Maquetas de Arquitectura en Realidad Aumentada" class="subtitle-label" style="font-size: 22px; margin-bottom: 80px;" />
-            <ui:Button name="Btn_EnterApp" text="Iniciar" class="action-button" />
+            <ui:Label text="Visualizador de Maquetas de Arquitectura en Realidad Aumentada" class="subtitle-label" style="margin-bottom: 80px;" />
+            <ui:Label text="Presiona la pantalla para comenzar" class="tap-to-start-label" style="margin-top: 100px;" />
         </ui:VisualElement>
 
 
