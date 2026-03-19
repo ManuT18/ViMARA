@@ -19,7 +19,7 @@
         <!-- ========================================== -->
         <!-- PANTALLA 1: MAIN MENU                      -->
         <!-- ========================================== -->
-        <ui:VisualElement name="MainMenu" class="panel" style="display: none;">
+        <ui:VisualElement name="MainMenu" class="panel" style="display: flex;">
             <ui:Label text="ViMARA" class="title-label" />
             <ui:Label text="Visualizador de Maquetas de Arquitectura en Realidad Aumentada" class="subtitle-label" style="margin-bottom: 80px;" />
             <ui:Label text="Presiona la pantalla para comenzar" class="tap-to-start-label" style="margin-top: 100px;" />
@@ -29,7 +29,7 @@
         <!-- ========================================== -->
         <!-- PANTALLA 2: MODE SELECTION                 -->
         <!-- ========================================== -->
-        <ui:VisualElement name="ModeSelection" class="panel" style="display: flex;">
+        <ui:VisualElement name="ModeSelection" class="panel" style="display: none;">
             <ui:Label text="Selecciona el modo de visualización" class="subtitle-label-2" />
             
             <ui:Button name="Btn_SelectPlane" text="Plano Libre" class="action-button" />
@@ -41,17 +41,17 @@
         <!-- PANTALLA 3: MODEL IMPORT                   -->
         <!-- ========================================== -->
         <ui:VisualElement name="ModelImport" class="panel" style="display: none;">
-            <ui:Label text="Importar Modelo" class="subtitle-label" />
-            <ui:Label text="(Formatos soportados: .gltf, .glb)" style="color: rgb(150, 150, 150); font-size: 20px; margin-bottom: 50px;" />
+            <ui:Label text="Importar Modelo" class="subtitle-label-2" />
+            <ui:Label text="(Formatos soportados: .gltf, .glb)" style="color: rgb(150, 150, 150); font-size: 30px; margin-bottom: 50px;" />
             
             <!-- Botón que abrirá el file picker (próximamente en código) -->
             <ui:Button name="Btn_OpenFileBrowser" text="Buscar Modelo" class="action-button" style="margin-bottom: 30px;" />
             
             <!-- Label que indicará el nombre o estado del archivo cargado -->
-            <ui:Label name="Lbl_FileStatus" text="Ningún archivo seleccionado" style="color: rgb(200, 200, 200); font-size: 22px; margin-bottom: 50px; -unity-font-style: italic;" />
+            <ui:Label name="Lbl_FileStatus" text="Ningún archivo seleccionado" style="color: rgb(200, 200, 200); font-size: 27px; margin-bottom: 50px; -unity-font-style: italic;" />
 
             <!-- Este botón inicia la escena AR real, lo enlazaremos luego -->
-            <ui:Button name="Btn_StartAR" text="Visualizar en AR" class="action-button secondary-button" style="opacity: 0.5;" />
+            <ui:Button name="Btn_StartAR" text="Visualizar en AR" class="action-button secondary-button" style="opacity: 0.5; margin-top: 100px;" />
         </ui:VisualElement>
 
         <!-- ========================================== -->
@@ -59,10 +59,10 @@
         <!-- ========================================== -->
         <ui:VisualElement name="InfoPopup" class="popup-container" style="display: none;">
             <ui:VisualElement class="popup-content">
-                <ui:Label text="Información de Modos" class="subtitle-label" style="font-size: 40px; margin-bottom: 40px;" />
+                <ui:Label text="Información de Modos" class="subtitle-label" style="font-size: 45px; margin-bottom: 60px; color: rgb(150, 150, 150);" />
                 <ui:Label text="Plano Libre: Detecta superficies planas reales (mesas, piso) para ubicar el modelo a tamaño real" class="popup-text" />
                 <ui:Label text="Marcador Fijo: Detecta una imagen predefinida y ancla el modelo 3D sobre ella" class="popup-text" />
-                <ui:Label text="Toca en cualquier lugar para salir" class="tap-to-start-label" style="font-size: 25px; margin-top: 50px;" />
+                <ui:Label text="Toca en cualquier lugar para salir" class="tap-to-start-label" style="font-size: 25px; margin-top: 30px;" />
             </ui:VisualElement>
         </ui:VisualElement>
 
