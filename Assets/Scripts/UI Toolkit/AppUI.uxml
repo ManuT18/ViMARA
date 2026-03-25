@@ -12,7 +12,7 @@
     <ui:VisualElement class="screen-container">
 
         <!-- Botones Flotantes Globales Absolutos -->
-        <ui:Button name="Btn_GlobalBack" text="back-button" class="back-button" style="display: none;" />
+        <ui:Button name="Btn_GlobalBack" class="back-button" style="display: none;" />
         <ui:Button name="Btn_SelectionInfo" class="info-button" style="display: none;" />
         <ui:Button name="Btn_ExitApp" class="exit-button" style="display: none;" />
 
@@ -64,6 +64,13 @@
                 <ui:Label text="Marcador Fijo: Detecta una imagen predefinida y ancla el modelo 3D sobre ella" class="popup-text" />
                 <ui:Label text="Toca en cualquier lugar para salir" class="tap-to-start-label" style="font-size: 25px; margin-top: 30px;" />
             </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- ========================================== -->
+        <!-- Preview Box                                -->
+        <!-- ========================================== -->
+        <ui:VisualElement name="PreviewBox" class="preview-box" style="display: none;">
+            
         </ui:VisualElement>
 
     </ui:VisualElement>

@@ -3,10 +3,21 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 public class UIManager : MonoBehaviour
 {
     [Header("UI Document")]
     [SerializeField] private UIDocument appUIDocument;
+
+    [Header("Vista Previa del Modelo")]
+    [SerializeField] private RenderTexture modelPreviewTexture; 
+    [SerializeField] private Camera previewCamera;
+    
+    //Elemento visual que contiene la textura para la preview
+    private VisualElement previewBoxContainer;
 
     // Elementos raíz y vistas principales (VisualElements)
     private VisualElement root;
@@ -23,6 +34,12 @@ public class UIManager : MonoBehaviour
 
     // Botones de Info
     private Button btnSelectionInfo;
+
+    // Componentes de Importación de Modelo
+    private Button btnOpenFileBrowser;
+    private Label lblFileStatus;
+    private Button btnStartAR;
+    private string selectedFilePath = null;
 
     private void OnEnable()
     {
@@ -43,6 +60,7 @@ public class UIManager : MonoBehaviour
         modeSelectionContainer = root.Q<VisualElement>("ModeSelection");
         modelImportContainer = root.Q<VisualElement>("ModelImport");
         infoPopupContainer = root.Q<VisualElement>("InfoPopup");
+        previewBoxContainer = root.Q<VisualElement>("PreviewBox");
 
         // Búsqueda de Botones
         btnModePlane = root.Q<Button>("Btn_SelectPlane");
@@ -50,6 +68,13 @@ public class UIManager : MonoBehaviour
         btnGlobalBack = root.Q<Button>("Btn_GlobalBack");
         btnSelectionInfo = root.Q<Button>("Btn_SelectionInfo");
         btnExitApp = root.Q<Button>("Btn_ExitApp");
+
+        // Búsqueda en Pantalla de Carga
+        btnOpenFileBrowser = root.Q<Button>("Btn_OpenFileBrowser");
+        lblFileStatus = root.Q<Label>("Lbl_FileStatus");
+        btnStartAR = root.Q<Button>("Btn_StartAR");
+        
+        if (btnStartAR != null) btnStartAR.SetEnabled(false); // Inicia deshabilitado
 
         // Suscripción a eventos
         if (mainMenuContainer != null) mainMenuContainer.RegisterCallback<PointerDownEvent>(OnEnterAppClicked);
@@ -59,6 +84,8 @@ public class UIManager : MonoBehaviour
         if (btnSelectionInfo != null) btnSelectionInfo.clicked += OnSelectionInfoClicked;
         if (btnExitApp != null) btnExitApp.clicked += OnExitAppClicked;
         if (infoPopupContainer != null) infoPopupContainer.RegisterCallback<PointerDownEvent>(OnCloseInfoClicked);
+        if (btnOpenFileBrowser != null) btnOpenFileBrowser.clicked += OnOpenFileBrowserClicked;
+        if (btnStartAR != null) btnStartAR.clicked += OnStartARClicked;
 
         // Mostrar pantalla inicial por defecto
         ShowView(mainMenuContainer);
@@ -74,51 +101,11 @@ public class UIManager : MonoBehaviour
         if (btnSelectionInfo != null) btnSelectionInfo.clicked -= OnSelectionInfoClicked;
         if (btnExitApp != null) btnExitApp.clicked -= OnExitAppClicked;
         if (infoPopupContainer != null) infoPopupContainer.UnregisterCallback<PointerDownEvent>(OnCloseInfoClicked);
+        if (btnOpenFileBrowser != null) btnOpenFileBrowser.clicked -= OnOpenFileBrowserClicked;
+        if (btnStartAR != null) btnStartAR.clicked -= OnStartARClicked;
     }
 
-    // Oculta todas las vistas y muestra la solicitada
-    private void ShowView(VisualElement viewToShow)
-    {
-        if (mainMenuContainer != null) mainMenuContainer.style.display = DisplayStyle.None;
-        if (modeSelectionContainer != null) modeSelectionContainer.style.display = DisplayStyle.None;
-        if (modelImportContainer != null) modelImportContainer.style.display = DisplayStyle.None;
-
-        if (viewToShow != null)
-        {
-            viewToShow.style.display = DisplayStyle.Flex;
-        }
-
-        // Controlar la visibilidad de los botones flotantes de navegación
-        if (btnGlobalBack != null)
-        {
-            if (viewToShow == modelImportContainer)
-            {
-                btnGlobalBack.style.display = DisplayStyle.Flex;
-                btnGlobalBack.BringToFront();
-            }
-            else
-            {
-                btnGlobalBack.style.display = DisplayStyle.None;
-            }
-        }
-
-        if (btnSelectionInfo != null && btnExitApp != null)
-        {
-            if (viewToShow == modeSelectionContainer)
-            {
-                btnSelectionInfo.style.display = DisplayStyle.Flex;
-                btnSelectionInfo.BringToFront();
-                
-                btnExitApp.style.display = DisplayStyle.Flex;
-                btnExitApp.BringToFront();
-            }
-            else
-            {
-                btnSelectionInfo.style.display = DisplayStyle.None;
-                btnExitApp.style.display = DisplayStyle.None;
-            }
-        }
-    }
+    
 
     private void HandleBackAction()
     {
@@ -184,5 +171,61 @@ public class UIManager : MonoBehaviour
 #else
         Application.Quit();
 #endif
+    }
+
+    private void OnOpenFileBrowserClicked()
+    {
+        Debug.Log("Abriendo explorador de archivos...");
+
+#if UNITY_EDITOR
+        // Usa la ventana nativa de la PC para probar sin tener que buildear ("gltf,glb,obj")
+        string path = EditorUtility.OpenFilePanel("Selecciona el modelo 3D", "", "gltf,glb,obj,stl");
+        if (!string.IsNullOrEmpty(path))
+        {
+            OnFileSelectedSuccess(path);
+        }
+#else
+        // TODO: En Android hay que usar un plugin nativo (ej. NativeFilePicker de yasirkula)
+        // NativeFilePicker.PickFile( (path) => { if (path != null) OnFileSelectedSuccess(path); }, new string[] { "*/*" });
+        Debug.LogWarning("En celular se requiere un plugin como NativeFilePicker. Asigna una ruta manual si quieres probar.");
+#endif
+    }
+
+    private void OnFileSelectedSuccess(string path)
+    {
+        selectedFilePath = path;
+        
+        // Actualizamos el Label de UI
+        if (lblFileStatus != null)
+        {
+            lblFileStatus.text = System.IO.Path.GetFileName(path);
+            lblFileStatus.style.color = new StyleColor(Color.white);
+            lblFileStatus.style.unityFontStyleAndWeight = FontStyle.Bold;
+        }
+
+        // Habilitamos el botón de iniciar AR (se quita el opacity y se habilita funcionalidad)
+        if (btnStartAR != null)
+        {
+            btnStartAR.style.opacity = 1f;
+            btnStartAR.SetEnabled(true);
+        }
+
+        // Cambiamos el fondo del div a la textura de la cámara
+        if (previewBoxContainer != null && modelPreviewTexture != null)
+        {
+            previewBoxContainer.style.backgroundImage = new StyleBackground(Background.FromRenderTexture(modelPreviewTexture));
+            previewBoxContainer.style.display = DisplayStyle.Flex;
+        }
+    }
+
+    private void OnStartARClicked()
+    {
+        if (string.IsNullOrEmpty(selectedFilePath)) return;
+
+        Debug.Log("¡Cambiando a Escena de Realidad Aumentada! Modelo a cargar: " + selectedFilePath);
+        
+        // TODO: Aquí pondremos SceneManager.LoadScene("ARSceneName");
+        // y pasaremos el string 'selectedFilePath' a un manager global
+        // para que TriLib o GLTFast lo parsee.
     }
 }
