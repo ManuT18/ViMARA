@@ -112,9 +112,8 @@ namespace ViMARA.UI
         public void UpdateFileStatusLabel(string fileName)
         {
             if (lblFileStatus == null) return;
-            lblFileStatus.text = fileName;
-            lblFileStatus.style.color = new StyleColor(Color.white);
-            lblFileStatus.style.unityFontStyleAndWeight = FontStyle.Bold;
+            // A petición, ya no mostramos el texto cuando hay un archivo, lo ocultamos para dar paso al Preview.
+            lblFileStatus.style.display = DisplayStyle.None;
         }
 
         public void SetStartARButtonState(bool isEnabled)
@@ -122,6 +121,16 @@ namespace ViMARA.UI
             if (btnStartAR == null) return;
             btnStartAR.SetEnabled(isEnabled);
             btnStartAR.style.opacity = isEnabled ? 1f : 0.5f;
+
+            if (isEnabled)
+            {
+                // Quitamos la clase de botón gris secundario para que vuelva a su azul original
+                btnStartAR.RemoveFromClassList("secondary-button");
+            }
+            else
+            {
+                btnStartAR.AddToClassList("secondary-button");
+            }
         }
 
         public void ShowModelPreviewStream()
@@ -142,11 +151,17 @@ namespace ViMARA.UI
         public void ShowInfoPopup() 
         { 
             if (infoPopupContainer != null) infoPopupContainer.style.display = DisplayStyle.Flex; 
+            btnSelectionInfo.style.display = DisplayStyle.None;
+            btnGlobalBack.style.display = DisplayStyle.None;
+            btnExitApp.style.display = DisplayStyle.None;
         }
 
         public void HideInfoPopup() 
         { 
             if (infoPopupContainer != null) infoPopupContainer.style.display = DisplayStyle.None; 
+            btnSelectionInfo.style.display = DisplayStyle.Flex;
+            btnGlobalBack.style.display = DisplayStyle.Flex;
+            btnExitApp.style.display = DisplayStyle.Flex;
         }
 
         // Oculta todas las vistas y muestra la solicitada (privado para la vista física)

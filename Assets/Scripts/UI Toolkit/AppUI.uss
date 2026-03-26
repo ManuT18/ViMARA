@@ -1,13 +1,40 @@
-/* Contenedor general que ocupa toda la pantalla */
+/* =========================================================================
+   ViMARA - ARCHIVO DE ESTILOS PRINCIPAL (UI Toolkit)
+   =========================================================================
+   Aquí se definen los tamaños, colores y comportamiento de toda la interfaz.
+   Está organizado por categorías para que sea fácil de mantener y escalar.
+========================================================================= */
+
+
+/* =========================================================================
+   1. CONTENEDORES PRINCIPALES Y ESTRUCTURA
+   Define cómo se distribuyen los elementos en la pantalla.
+========================================================================= */
+
+/* Contenedor general que ocupa absolutamente toda la pantalla */
 .screen-container {
     flex-grow: 1;
-    background-color: rgba(28, 28, 30, 0.97);
+    background-color: rgba(28, 28, 30, 0.97); 
     align-items: center;
     justify-content: center;
     padding: 20px;
 }
 
-/* Títulos principales */
+/* Pantallas individuales (Menú, Importar, etc.) */
+.panel {
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+
+/* =========================================================================
+   2. TIPOGRAFÍA Y TEXTOS
+   Estilos de todas las fuentes y tamaños de letras legibles en el celular.
+========================================================================= */
+
+/* Título principal */
 .title-label {
     font-size: 150px;
     -unity-font-style: bold;
@@ -16,6 +43,7 @@
     letter-spacing: 5px;
 }
 
+/* Subtítulo descriptivo en el menú principal */
 .subtitle-label {
     font-size: 50px;
     width: 99%;
@@ -26,6 +54,7 @@
     -unity-text-align: middle-center;
 }
 
+/* Subtítulos para los encabezados de las pantallas de navegación */
 .subtitle-label-2 {
     font-size: 60px;
     width: 99%;
@@ -36,17 +65,23 @@
     -unity-text-align: middle-center;
 }
 
+/* Texto en cursiva para llamadas a la acción */
 .tap-to-start-label {
     font-size: 35px;
     -unity-font-style: italic;
     color: rgb(150, 150, 150);
 }
 
-/* Estilo Base para los Botones */
+
+/* =========================================================================
+   3. BOTONES DE ACCIÓN PRINCIPALES
+========================================================================= */
+
+/* Estructura común para "Plano Libre", "Buscar Modelo", etc. */
 .action-button {
     font-size: 40px;
     color: rgb(255, 255, 255);
-    background-color: rgba(45, 122, 255, 0.29);
+    background-color: rgba(45, 122, 255, 0.29); 
     border-radius: 15px;
     padding-top: 20px;
     padding-bottom: 20px;
@@ -56,10 +91,9 @@
     margin-bottom: 15px;
     border-width: 0;
     transition-property: background-color, scale;
-    transition-duration: 0.2s, 0.2s;
+    transition-duration: 0.2s, 0.2s; 
 }
 
-/* Efectos Hover/Active para botones */
 .action-button:hover {
     background-color: rgb(75, 142, 255);
     scale: 1.02;
@@ -70,99 +104,72 @@
     scale: 0.98;
 }
 
-/* Botón secundario (Gris oscuro) */
+/* Variación secundaria (Gris Oscuro) usada para botones deshabilitados o secundarios */
 .secondary-button {
     background-color: rgb(60, 60, 65);
 }
 
-.secondary-button:hover {
-    background-color: rgb(80, 80, 85);
+.secondary-button:hover { background-color: rgb(80, 80, 85); }
+.secondary-button:active { background-color: rgb(40, 40, 45); }
+
+
+/* =========================================================================
+   4. BOTONES FLOTANTES CIRCULARES 
+========================================================================= */
+
+.info-button, .exit-button, .back-button {
+    width: 80px;
+    height: 80px;
+    border-radius: 40px;        
+    background-color: rgba(60, 60, 65, 0.9);
+    background-size: 50% 50%;   
+    background-position: center;
+    background-repeat: no-repeat;
+    position: absolute;         
+    border-width: 0;
+    transition-duration: 0.2s;
 }
 
-.secondary-button:active {
-    background-color: rgb(40, 40, 45);
+/* Animaciones combinadas */
+.info-button:hover, .exit-button:hover, .back-button:hover {
+    background-color: rgba(80, 80, 85, 1);
+    scale: 1.05;
 }
+
+/* Posiciones e Íconos individuales */
 
 /* Botón flotante de Información (?) */
 .info-button {
-    width: 100px;
-    height: 100px;
-    border-radius: 50px;
-    background-color: rgba(60, 60, 65, 0.9);
-    background-image: url('project://database/Assets/Sprites/help_icon.png');
-    -unity-background-scale-mode: scale-to-fit;
-    position: absolute;
-    top: 50px;
-    right: 50px;
-    border-width: 0;
-    transition-duration: 0.2s;
+    background-image: url('project://database/Assets/Sprites/help_icon.svg');
+    background-size: 43% 43%;
+    top: 40px;
+    right: 40px;
 }
-
-.info-button:hover {
-    background-color: rgba(80, 80, 85, 1);
-    scale: 1.05;
-}
-
-.info-button:active {
-    scale: 0.95;
-    background-color: rgba(40, 40, 45, 1);
-}
+.info-button:active { scale: 0.95; background-color: rgba(40, 40, 45, 1); }
 
 /* Botón flotante de Salida (X) */
 .exit-button {
-    width: 100px;
-    height: 100px;
-    border-radius: 50px;
-    background-color: rgba(60, 60, 65, 0.9);
-    background-image: url('project://database/Assets/Sprites/close_icon.png');
-    -unity-background-scale-mode: scale-to-fit;
-    position: absolute;
-    top: 50px;
-    left: 50px;
-    border-width: 0;
-    transition-duration: 0.2s;
+    background-image: url('project://database/Assets/Sprites/close_icon.svg');
+    top: 40px;
+    left: 40px;
 }
+.exit-button:active { scale: 0.95; background-color: rgba(180, 50, 50, 1); }
 
-.exit-button:hover {
-    background-color: rgba(80, 80, 85, 1);
-    scale: 1.05;
-}
-
-.exit-button:active {
-    scale: 0.95;
-    background-color: rgba(180, 50, 50, 1);
-}
-
-/* Botón flotante de Atrás (←) */
+/* Botón flotante de Atrás (<-) */
 .back-button {
-    width: 100px;
-    height: 100px;
-    border-radius: 50px;
-    background-color: rgba(60, 60, 65, 0.9);
-    background-image: url('project://database/Assets/Sprites/arrow_back_icon.png');
-    -unity-background-scale-mode: scale-to-fit;
-    position: absolute;
-    top: 50px;
-    left: 50px;
-    border-width: 0;
-    transition-duration: 0.2s;
-    font-size: 60px;
-    color: white;
-    -unity-font-style: bold;
-    -unity-text-align: middle-center;
+    background-image: url('project://database/Assets/Sprites/arrow_back_icon.svg');
+    top: 40px;
+    left: 40px;
 }
+.back-button:active { scale: 0.95; background-color: rgba(180, 50, 50, 1); }
 
-.back-button:hover {
-    background-color: rgba(80, 80, 85, 1);
-    scale: 1.05;
-}
 
-.back-button:active {
-    scale: 0.95;
-    background-color: rgba(180, 50, 50, 1);
-}
+/* =========================================================================
+   5. COMPONENTES ESPECIALES
+   Popups de ayuda visuales y cajas renderizadoras de modelos 3D.
+========================================================================= */
 
-/* Estilos de la Ventana Emergente POPUP */
+/* Fondo oscurecido para la ventana de manual / instrucciones */
 .popup-container {
     position: absolute;
     width: 100%;
@@ -172,6 +179,7 @@
     justify-content: center;
 }
 
+/* La tarjeta gris central del popup */
 .popup-content {
     background-color: rgb(35, 35, 40);
     border-radius: 40px;
@@ -191,20 +199,16 @@
     line-height: 1.5;
 }
 
-/* Contenedor interno para los Paneles */
-.panel {
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-}
-
-/* Estilo para el PreviewBox (Placeholder) */
+/* Estilo para el reproductor hueco donde renderizaremos el modelo 3D */
 .preview-box {
-    width: 100%;
-    height: 100%;
+    aspect-ratio: 1;
+    width: 60%;
+    /*height: 50%;*/
+    max-width: 600px;
+    max-height: 600px;
+    border-radius: 40px;
     background-color: rgba(10, 10, 15, 0.95);
     align-items: center;
     justify-content: center;
+    margin-bottom: 30px;
 }
-

@@ -137,7 +137,12 @@ namespace ViMARA.UI
         private void HandleExitApp()
         {
             Debug.Log("[Presenter] Saliendo de la aplicación.");
+            
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
             Application.Quit();
+#endif
         }
     }
 }
