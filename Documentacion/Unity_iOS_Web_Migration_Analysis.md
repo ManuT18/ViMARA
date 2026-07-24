@@ -1,40 +1,25 @@
-# Project ViMARA: Comprehensive Unity iOS Export & WebAR Migration Technical Synthesis Report
+# Project ViMARA: Unity iOS Export & WebAR Migration Technical Synthesis Report
 
-**Document Metadata:**
-- **Project Name:** ViMARA (Visualizador de Maquetas de Arquitectura en Realidad Aumentada)
-- **Target Workspace:** `c:\Users\manut\Documentos\UNIVERSIDAD\BENTRE25\ViMARA`
-- **Engine / Framework Versions:** Unity 6 (6000.3.10f1), AR Foundation 6.3.3, GLTFast, Three.js r160, MindAR.js v1.2
-- **Author:** worker_report (Teamwork Master Synthesis Agent)
-- **Date:** July 24, 2026
-- **Version:** 1.0.0 (Final Comprehensive Master Report)
+**Metadata:**
+- **Proyecto:** ViMARA (Visualizador de Maquetas de Arquitectura en Realidad Aumentada)
+- **Entorno:** Unity 6 (6000.3.10f1), AR Foundation 6.3.3, GLTFast, Three.js r160, MindAR.js v1.2
+- **Estado:** Informe Técnico de Síntesis Arquitectónica
 
 ---
 
 ## Executive Summary
 
-This master technical synthesis report delivers a definitive engineering evaluation for **Project ViMARA** across two critical operational domains:
-1. **Exporting and compiling Unity 6 iOS applications directly from a Windows development machine** using modern (2024–2026) cloud CI/CD pipelines, virtualization, Apple Developer signing, and Windows sideloading workflows.
-2. **Evaluating the technical feasibility, architectural trade-offs, and code salvageability of migrating ViMARA from Unity (C#) to a Native WebAR technology stack** (Three.js, MindAR, WebXR, HTML5/CSS3).
-
-### Key Architectural Findings & Strategic Decisions:
-
-* **iOS Compilation from Windows ($0 Cost Path):** Windows developers **cannot** generate native iOS binaries (`.ipa`) locally due to Apple's strict Xcode requirement on macOS. However, paying Apple's $99/year Developer Fee is **NOT required for physical device testing**. Physical testing on personal iPhones/iPads can be accomplished for **$0** using a **Free Apple ID** combined with cloud CI/CD builders (Codemagic or GitHub Actions `game-ci`) and Windows sideloading engines (Sideloadly / AltServer).
-* **CI/CD Capacity Winner:** **Codemagic** delivers **500 free M1 Mac build minutes/month** (~33–40 iOS builds/mo), outperforming GitHub Actions (200 free macOS minutes/month after its 10x multiplier = ~14 builds/mo) and Unity Cloud Build (120 free minutes/mo = ~5–8 builds/mo).
-* **Definitive WebAR Code Rewrite Verdict:** **YES — Migrating ViMARA to a native WebAR stack requires a 100% complete rewrite of all application code and logic from scratch.** Zero C# source code, zero Unity scene files (`.unity`), zero UI Toolkit (`.uxml`/`.uss`) templates, zero HLSL shaders, and zero Unity prefabs can be reused or converted automatically to run natively in a web browser.
-* **Unity WebGL Export Inviability for Mobile WebAR:** Exporting Unity directly to WebGL for mobile AR is **fundamentally inviable for production**. The Unity WebGL compilation path (C# -> IL2CPP -> Emscripten -> WASM) produces massive WebAssembly binaries (22MB–70MB compressed, 50MB–150MB uncompressed) requiring 25–55 seconds to load over 4G networks. On mobile devices, particularly iOS Safari, WASM pre-allocation and uncompressed GPU textures frequently exceed Safari's strict tab RAM limits (1.0GB–1.4GB), causing fatal browser crashes (`"This webpage was reloaded because a problem occurred"`). Furthermore, iOS Safari does **not** support W3C WebXR `immersive-ar`.
-* **Recommended Dual-Tier Architecture:** ViMARA should adopt a **Hybrid Dual-Tier Model**:
-  - **Tier 1 (Primary Application):** Native Mobile Application built with **Unity 6 + AR Foundation 6.3.3**, providing 60 FPS performance, plane detection, runtime `.glb` model loading via GLTFast, and local caching.
-  - **Tier 2 (Optional Web Preview):** Lightweight Web Preview page utilizing Google **`<model-viewer>`** (for Instant Quick Look AR plane placement) and **MindAR.js + Three.js** (for web-based image tracking), bypassing Unity WebGL export entirely.
+1. **Compilación iOS desde Windows (Ruta $0):** Los desarrolladores en Windows no pueden generar binarios iOS (`.ipa`) localmente por el requerimiento de Xcode en macOS. Sin embargo, **NO es obligatorio pagar los $99/año de Apple** para pruebas en dispositivos físicos. Las pruebas físicas en iPhone/iPad se realizan a costo **$0** mediante una **Apple ID Gratuita** combinada con builders CI/CD en la nube (Codemagic o GitHub Actions `game-ci`) y motores de sideloading en Windows (Sideloadly / AltServer).
+2. **Ganador CI/CD:** **Codemagic** ofrece **500 minutos M1 Mac/mes gratis** (~33–40 builds/mes), superando a GitHub Actions (200 min macOS/mes tras el multiplicador 10x = ~14 builds/mes) y Unity Cloud Build (120 min/mes = ~5–8 builds/mes).
+3. **Veredicto de Reescritura para WebAR:** **SÍ — Migrar ViMARA a un stack WebAR nativo requiere una reescritura del 100% de la lógica y código C#.** Cero código C#, escenas `.unity`, plantillas UI Toolkit (`.uxml`/`.uss`), shaders HLSL o prefabs de Unity pueden reutilizarse directamente en la web.
+4. **Inviabilidad de Unity WebGL en AR Móvil:** La compilación Unity WebGL (C# $\rightarrow$ IL2CPP $\rightarrow$ Emscripten $\rightarrow$ WASM) genera paquetes WASM masivos (22–70 MB) con tiempos de carga de 25–55 s en 4G. En iOS Safari, la asignación WASM y texturas desbordan el límite de memoria RAM por pestaña (1.0–1.4 GB), causando cierres brutales (*"This webpage was reloaded because a problem occurred"*). Safari tampoco soporta WebXR `immersive-ar`.
+5. **Modelo Híbrido Recomendado:**
+   - **Tier 1 (Aplicación Principal):** Nativa móvil con **Unity 6 + AR Foundation 6.3.3**, 60 FPS, detección de planos, carga dinámica de `.glb` vía GLTFast.
+   - **Tier 2 (Vista Previa Web):** Vista previa ligera con Google **`<model-viewer>`** (planos) y **MindAR.js + Three.js** (marcadores).
 
 ---
 
-# Part 1: Exporting & Compiling Unity Projects to iOS from Windows (2024+ Solutions)
-
-Compiling an iOS app from Unity produces an Xcode project (`.xcodeproj` / `.xcworkspace`). Compiling this Xcode project into an executable iOS Archive (`.xcarchive`) and Signed Application Package (`.ipa`) requires **Apple Xcode**, which runs exclusively on macOS. Because Windows PCs cannot execute Xcode natively, Windows developers must utilize remote cloud compilation, cloud virtual machines, or virtualization.
-
----
-
-## 1. Breakdown of the 4 Cloud & Remote Compilation Methods
+# Part 1: Exporting & Compiling Unity Projects to iOS from Windows
 
 ```
                                   ┌────────────────────────────────────────────────────────┐
@@ -46,16 +31,16 @@ Compiling an iOS app from Unity produces an Xcode project (`.xcodeproj` / `.xcwo
         ┌────────────────────────────┬────────────────────────┴────────────┬────────────────────────────┐
         ▼                            ▼                                     ▼                            ▼
 ┌───────────────┐           ┌───────────────────┐                 ┌──────────────────┐         ┌──────────────────┐
-│   METHOD 1    │           │     METHOD 2      │                 │     METHOD 3     │         │     METHOD 4     │
+┌   METHOD 1    │           │     METHOD 2      │                 │     METHOD 3     │         │     METHOD 4     │
 │ Unity DevOps  │           │  GitHub Actions   │                 │ Codemagic CI/CD  │         │  Cloud / Local   │
 │ Cloud Build   │           │ (game-ci/builder) │                 │ (M1 Mac Runners) │         │ macOS Virtual VM │
 └───────┬───────┘           └─────────┬─────────┘                 └────────┬─────────┘         └────────┬─────────┘
         │                             │                                    │                            │
-        │ 120 free min/mo             │ 200 free macOS min/mo              │ 500 free M1 min/mo         │ ~$1/hr or AWS 24h│
-        │ (~5-8 builds)               │ (~14 builds)                       │ (~33-40 builds)            │ EULA rule        │
+        │ 120 free min/mo             │ 200 free macOS min/mo              │ 500 free M1 min/mo         │ ~$1/hr o AWS 24h │
+        │ (~5-8 builds)               │ (~14 builds)                       │ (~33-40 builds)            │ regla EULA       │
         ▼                             ▼                                    ▼                            ▼
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                       DOWNLOAD UNVIEWED / UNSIGNED .IPA BINARY                                   │
+│                                       DESCARGA DE BINARIO .IPA NO FIRMADO                                       │
 └────────────────────────────────────────────────────────┬────────────────────────────────────────────────────────┘
                                                          │
                                                Sideloadly / AltServer
@@ -63,39 +48,25 @@ Compiling an iOS app from Unity produces an Xcode project (`.xcodeproj` / `.xcwo
                                                          │
                                                          ▼
                                           ┌──────────────────────────────┐
-                                          │    PHYSICAL IPHONE / IPAD    │
+                                          │    IPHONE / IPAD FÍSICO      │
                                           └──────────────────────────────┘
 ```
 
-### Method 1: Unity Cloud Build / Unity DevOps
+---
 
-* **Overview & Architecture:** Unity DevOps (formerly Unity Cloud Build) is Unity's first-party cloud compilation service integrated directly into the Unity Dashboard and Editor. When triggered via Git pushes or dashboard requests, Unity provisions a cloud-hosted macOS virtual machine equipped with Xcode and the requested Unity Editor version (`6000.3.10f1`), compiles the C# codebase into C++ via IL2CPP, executes `xcodebuild`, applies Apple signing credentials, and outputs an `.ipa` binary.
-* **Setup Friction:** Low to Medium (2/5). Requires binding the project's Unity Organization ID to Unity DevOps in `Services > Build Automation`, specifying target Xcode versions (Xcode 15/16), and uploading `.p12` certificates and `.mobileprovision` profiles.
-* **Licensing & Quota Structure (2024–2026 Tiers):**
-  - Unity discontinued the "Plus" tier in late 2023.
-  - **Unity Personal (Free):** **120 build minutes / month**. Pay-as-you-go overages cost ~$0.04/minute. Limited to 1 concurrent build.
-  - **Unity Pro ($2,040/year):** **500 build minutes / month**. Pay-as-you-go overages cost ~$0.03/minute. 2 concurrent builds.
-  - **Unity Enterprise:** Custom dedicated build queues and SLAs.
-* **Capacity Estimate for ViMARA:** Unity 6 AR Foundation cold builds take ~15–22 minutes due to IL2CPP compilation and AssetBundle generation. The 120 free monthly minutes yield **~5 to 8 free iOS builds/month**.
+## 1. Métodos de Compilación remota
+
+### Método 1: Unity Cloud Build / DevOps
+- **Unity Personal (Gratis):** **120 minutos de build/mes**. Overages ~$0.04/min. 1 build concurrente.
+- **Capacidad:** Builds fríos en Unity 6 AR tomar ~15-22 min (IL2CPP + AssetBundles). Permite **~5 a 8 builds/mes gratis**.
 
 ---
 
-### Method 2: GitHub Actions with macOS Runners (`game-ci/unity-builder`)
+### Método 2: GitHub Actions con `game-ci/unity-builder`
+- **Multiplicador macOS:** GitHub regala 2,000 min Linux en repos privados. En runners macOS aplica un **multiplicador de 10x**:
+  $$\text{Minutos macOS} = \frac{2,000}{10} = \mathbf{200 \text{ minutos/mes}} \implies \left\lfloor \frac{200}{14} \right\rfloor = \mathbf{14 \text{ builds/mes}}$$
 
-* **Overview & Workflow Architecture:** `game-ci` is the premier open-source automation engine for building Unity projects within GitHub Actions. Because iOS exports require Xcode, the workflow executes on GitHub-hosted `macos-latest` (or `macos-14` Apple Silicon M1/M2) runners.
-* **Billing & Minutes Multiplier Breakdown:**
-  - GitHub Free accounts include **2,000 free Actions minutes / month** for private repositories (unlimited for public repositories).
-  - GitHub applies **multiplier rates** based on runner OS architecture:
-    - Linux Runners: **1x** multiplier (1 min = 1 min billed)
-    - Windows Runners: **2x** multiplier (1 min = 2 mins billed)
-    - **macOS Runners (x86_64 & M1 arm64): 10x multiplier** (1 min = 10 mins billed)
-  - **Mathematical Quota Calculation for ViMARA:**
-    $$\text{Free macOS Minutes} = \frac{2,000 \text{ free Linux minutes}}{10 \text{ multiplier}} = \mathbf{200 \text{ macOS minutes/month}}$$
-  - Average `game-ci` iOS build time for Unity 6 AR Foundation: **~14 minutes**.
-  - Maximum free iOS builds per month:
-    $$\left\lfloor \frac{200 \text{ macOS minutes}}{14 \text{ minutes/build}} \right\rfloor = \mathbf{14 \text{ builds/month}}$$
-
-#### Complete Production `.github/workflows/build-ios.yml` Configuration:
+#### Producción `.github/workflows/build-ios.yml`:
 
 ```yaml
 name: ViMARA iOS Cloud Build (Windows Workflow)
@@ -180,177 +151,100 @@ jobs:
 
 ---
 
-### Method 3: Third-Party Mobile CI/CD Services
-
-* **Codemagic (Turnkey Winner):**
-  - **Free Tier:** **500 free M1 Mac build minutes / month**.
-  - **Unity & Signing Integration:** Native integration with Unity Editor instances and automated code signing via App Store Connect API keys without requiring a physical Mac.
-  - **Capacity for ViMARA:** At ~12–15 minutes per M1 Mac build, Codemagic provides **~33 to 40 free iOS builds/month**, making it the single highest free-quota CI/CD provider available.
-* **Bitrise:**
-  - **Free Tier:** **300 build minutes / month** on the Hobby Plan.
-  - **Critical Constraint:** Imposes a strict **30-minute maximum execution timeout per build**. Unity 6 AR IL2CPP compilation easily exceeds this 30-minute limit on free shared runners, causing build failures.
-* **Appcircle:**
-  - **Free Tier:** **200 build minutes / month**, offering ~12–15 free builds/month.
+### Método 3: Servicios CI/CD Móviles de Terceros
+- **Codemagic (Ganador):** **500 minutos M1 Mac/mes gratis** (~12-15 min/build M1 = **~33 a 40 builds/mes gratis**).
+- **Bitrise:** 300 min/mes. Límite estricto de **30 min por build** (falla con IL2CPP).
+- **Appcircle:** 200 min/mes (~12-15 builds/mes).
 
 ---
 
-### Method 4: Cloud Mac VMs & Local Virtualization
-
-* **MacInCloud (On-Demand Cloud Desktop):**
-  - **Model:** Remote desktop access (RDP/VNC/SSH) to dedicated macOS servers with pre-installed Xcode and Unity Hub.
-  - **Cost:** ~$1.00/hour (Pay-As-You-Go with $30 deposit) or $20–$45/month.
-  - **Evaluation:** Provides full visual Xcode debugging from a Windows PC, but requires manual build management.
-* **AWS EC2 Mac Instances (`mac1.metal` / `mac2.metal`):**
-  - **Model:** Dedicated Apple Mac mini hardware in AWS datacenters.
-  - **CRITICAL Apple EULA 24-Hour Rule:** Apple's macOS licensing agreement strictly mandates that **a dedicated Mac host must be allocated to a customer for a minimum of 24 consecutive hours**.
-  - **Cost Implication:** Even a 15-minute build incurs a mandatory 24-hour minimum billing charge:
-    $$\text{Minimum Cost per Allocation} = 24 \text{ hours} \times \$0.65\text{--}\$1.20/\text{hr} = \mathbf{\$15.60 \text{ to } \$28.80}$$
-  - **Verdict:** Cost-prohibitive for student, indie, or academic projects.
-* **Local macOS Virtual Machines on Windows (VMware / Proxmox KVM):**
-  - **Legal EULA Violation:** Direct violation of Apple's macOS EULA, which restricts macOS execution strictly to genuine Apple hardware.
-  - **GPU Acceleration Deficit (CRITICAL UNBLOCKER):** Virtualized macOS on Windows non-Apple hardware lacks **Metal GPU acceleration**. Without Metal GPU pass-through, Xcode Shader Compilers crash, Unity Editor rendering freezes, and iOS Simulators run at 1–2 FPS.
-  - **Verdict:** **Strictly NOT recommended.**
+### Método 4: VMs macOS en la Nube y Virtualización Local
+- **MacInCloud:** Remote desktop RDP/SSH. ~$1.00/hora (depósito $30) o $20–$45/mes.
+- **AWS EC2 Mac (`mac1.metal` / `mac2.metal`):** **Regla de 24 horas obligatoria de Apple EULA**. Mínimo billing por asignación: $15.60 a $28.80 por build. Inviable.
+- **VMs Locales (VMware/Proxmox en Windows):** Violación de EULA. **Falta de aceleración Metal GPU** (cuelga compilador de shaders Xcode y Unity Editor).
 
 ---
 
-## 2. Apple Developer Program App Signing & Physical Device Testing
+## 2. Firma de Aplicaciones y Sideloading
 
-### Clear, Definitive Answer to Apple Developer Pricing:
+### Comparativa: Apple ID Gratuita vs. Cuenta de Pago ($99/año)
 
-> **Is paying Apple's $99/year Developer Fee mandatory to test a Unity app on a physical iPhone or iPad?**  
-> **NO.** Physical device testing can be conducted completely for **FREE ($0/year)** using a Personal Apple ID. Paying $99/year is only required for TestFlight beta distribution, App Store publishing, or 1-year Ad-Hoc provisioning profiles.
-
-### Comparison: Free Apple ID vs. Paid Apple Developer Account ($99/yr)
-
-| Feature / Metric | Free Personal Apple ID | Paid Apple Developer Account ($99/yr) |
+| Característica | Personal Apple ID (Gratuita) | Paid Apple Developer ($99/año) |
 | :--- | :--- | :--- |
-| **Annual Cost** | **$0.00 / year** | **$99.00 USD / year** |
-| **Provisioning Expiration** | **7 Days** (app stops opening; must re-sign) | **1 Year (365 Days)** |
-| **Max App Identifiers** | **10 App IDs** per 7-day rolling window | Unlimited |
-| **Max Active Sideloaded Apps** | **3 active apps** per iOS device | Unlimited |
-| **Physical USB/Wi-Fi Testing** | **Supported ($0)** | **Supported** |
-| **TestFlight Beta Testing** | ❌ Not Supported | ✅ Supported (up to 10,000 testers) |
-| **App Store Distribution** | ❌ Not Supported | ✅ Supported |
-| **Signing Credential Generation** | Handled via Sideloadly / AltServer | Via App Store Connect API Keys |
+| **Costo Anual** | **$0.00 / año** | **$99.00 USD / año** |
+| **Expiración Perfil** | **7 Días** (requiere re-firmar) | **1 Año (365 Días)** |
+| **Límite App IDs** | **10 App IDs** en ventana de 7 días | Ilimitado |
+| **Apps Activas por Dispositivo** | **3 apps activas** | Ilimitado |
+| **Pruebas Físicas USB/Wi-Fi** | **Soportado ($0)** | **Soportado** |
+| **TestFlight / App Store** | ❌ No Soportado | ✅ Soportado |
 
 ---
 
-### Step-by-Step Certificate (`.p12`) & Provisioning Profile (`.mobileprovision`) Generation Without a Mac
+### Sideloading desde Windows
 
-#### Path A: Paid Account via App Store Connect API (No Mac Required)
-1. Log into [App Store Connect](https://appstoreconnect.apple.com).
-2. Navigate to **Users and Access > Integrations > App Store Connect API**.
-3. Generate an API Key with **Admin** or **App Manager** privileges. Download the `.p8` key file, and record the `Key ID` and `Issuer ID`.
-4. Supply these credentials to Codemagic or Fastlane (running inside GitHub Actions). The CI/CD engine automatically generates `.p12` certificates and `.mobileprovision` profiles in the cloud without ever touching a physical Mac.
-
-#### Path B: Free Apple ID via Windows Sideloading Engine (No Mac Required)
-1. Developers using a Free Apple ID do not manually export `.p12` files.
-2. Sideloadly or AltServer running on Windows authenticates directly with Apple's developer provisioning servers using your Apple ID credentials.
-3. Apple's server returns a 7-day personal development certificate tied to your device's Unique Device Identifier (UDID).
-4. The Windows sideloading engine signs the cloud-compiled `.ipa` binary locally and installs it directly onto the connected iPhone over USB or Wi-Fi.
+| Herramienta | Método de Firma | Refresh Inalámbrico | Complejidad Setup |
+| :--- | :--- | :--- | :--- |
+| **1. Sideloadly** | Free ID al vuelo | Sí (Wi-Fi) | ⭐ Muy Baja (Drag & Drop) |
+| **2. AltServer** | Free ID al vuelo | Sí (Background) | ⭐⭐ Baja (requiere iTunes) |
+| **3. 3uTools** | Firma integrada | No (Solo USB) | ⭐ Muy Baja |
+| **4. Apple Devices**| Perfil Ad-Hoc pre-firmado | No (Solo USB) | ⭐⭐ App Oficial |
 
 ---
 
-### Sideloading `.ipa` Binaries from Windows onto Physical Devices
+## 3. Matriz Comparativa Resumen: Windows a iOS
 
-```
-┌───────────────────────────────────────────────────────────────────────────────────────┐
-│                           WINDOWS SIDELOADING MATRIX                                  │
-├──────────────────┬─────────────────────┬────────────────────┬─────────────────────────┤
-│ Tool             │ Signing Method      │ Wireless Refresh   │ Windows Setup Effort    │
-├──────────────────┼─────────────────────┼────────────────────┼─────────────────────────┤
-│ 1. Sideloadly    │ On-the-fly Free ID  │ Yes (Wi-Fi)        │ ⭐ (Very Low - Drag & Drop)│
-│ 2. AltServer     │ On-the-fly Free ID  │ Yes (Background)   │ ⭐⭐ (Low - iTunes req)  │
-│ 3. 3uTools       │ Embedded Signer     │ No (USB Only)      │ ⭐ (Very Low)           │
-│ 4. Apple Devices │ Pre-Signed Ad-Hoc   │ No (USB Only)      │ ⭐⭐ (Official App)     │
-└──────────────────┴─────────────────────┴────────────────────┴─────────────────────────┘
-```
-
-1. **Sideloadly (Recommended Windows Sideloading Engine):**
-   - **Workflow:** Drag and drop the `.ipa` downloaded from GitHub Actions / Codemagic into Sideloadly on Windows. Enter your Free Apple ID, connect the iPhone via USB or Wi-Fi, and click **Start**.
-   - **Features:** Automates Anisette server authentication, handles 7-day personal profile signing, overrides Bundle IDs, and supports automatic background refresh over local Wi-Fi.
-2. **AltServer / AltStore:**
-   - Requires installing AltServer on Windows alongside official Apple iTunes and iCloud. Installs the AltStore application onto the iOS device, allowing automatic background re-signing every 7 days over Wi-Fi while the Windows PC is active.
-3. **3uTools:**
-   - Windows utility featuring an "IPA Signature" tool. Binds Free Apple IDs to sign and deploy `.ipa` files over USB.
-4. **Apple Devices App for Windows (Official Apple Utility):**
-   - Official Windows 10/11 app replacing iTunes. Used to drag-and-drop pre-signed `.ipa` files (signed via Paid Developer Ad-Hoc profiles containing the target device UDID) directly onto iPhones over USB.
-
----
-
-## 3. Summary Comparison Matrix: Windows-to-iOS Compilation
-
-| Export Method | Setup Friction (1–5) | Monthly Cost ($) | Build Speed (1–5) | Free Apple ID | Paid Apple ID | Deploy Effort (1–5) | Ideal Use Case |
+| Método | Setup | Costo Mensual | Velocidad | Free Apple ID | Paid Apple ID | Despliegue | Uso Ideal |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Unity DevOps / Cloud Build** | 2/5 (Low) | $0 (120 min) or $2,040/yr | 3/5 (~18 min) | ⚠️ Manual | ✅ Direct | 2/5 | Teams committed to Unity Dashboard & Plastic SCM |
-| **GitHub Actions (`game-ci`)** | 3/5 (Medium) | **$0** (200 macOS min) | 4/5 (~14 min) | ✅ Via Sideloadly | ✅ Via Secrets | 2/5 | **Best Free CI/CD Pipeline for Git Repositories** |
-| **Codemagic CI/CD** | **1/5 (Very Low)** | **$0** (500 M1 min) | **5/5 (~10 min M1)** | ✅ Via Sideloadly | ✅ Automated API Key | **1/5 (Auto-Distribute)** | **Best Overall Turnkey CI/CD (Maximum Free Builds)** |
-| **MacInCloud (Cloud VM)** | 2/5 (Low) | ~$1/hr or $20–$45/mo | 3/5 (Interactive) | ✅ Full Xcode UI | ✅ Full Xcode UI | 1/5 | Visual Xcode Storyboard / Swift Debugging |
-| **AWS EC2 Mac Instance** | 5/5 (High) | ~$15–$28 min/run (24h EULA) | 4/5 (Fast M1) | ✅ Full Xcode UI | ✅ Full Xcode UI | 2/5 | Enterprise Cloud Compliance Pipelines Only |
-| **Local macOS VM (Windows)** | 5/5 (Critical) | $0 | 1/5 (No Metal GPU) | ⚠️ Unstable | ⚠️ Unstable | 4/5 | **NOT Recommended** (EULA Violation + Metal Crash) |
+| **Unity Cloud Build** | 2/5 | $0 (120 min) | 3/5 (~18m) | ⚠️ Manual | ✅ Directo | 2/5 | Proyectos Unity Dashboard |
+| **GitHub Actions (`game-ci`)** | 3/5 | **$0** (200 macOS min) | 4/5 (~14m) | ✅ Sideloadly | ✅ Secrets | 2/5 | **Mejor Pipeline CI/CD Git** |
+| **Codemagic CI/CD** | **1/5** | **$0** (500 M1 min) | **5/5 (~10m M1)**| ✅ Sideloadly | ✅ API Keys | **1/5** | **Mejor Opción Turnkey** |
+| **MacInCloud** | 2/5 | ~$1/hr | 3/5 | ✅ Xcode UI | ✅ Xcode UI | 1/5 | Debugging visual |
+| **AWS EC2 Mac** | 5/5 | ~$15–$28 min/run | 4/5 | ✅ Xcode UI | ✅ Xcode UI | 2/5 | Enterprise únicamente |
+| **VM macOS Local** | 5/5 | $0 | 1/5 (Sin Metal) | ⚠️ Inestable | ⚠️ Inestable | 4/5 | **NO RECOMENDADO** |
 
 ---
 
-# Part 2: Unity to WebAR Migration Analysis & Technical Feasibility
+# Part 2: Unity to WebAR Migration Analysis
 
-Evaluating the technical feasibility of migrating ViMARA from Unity (C#) to a Native WebAR architecture (Three.js / MindAR / WebXR / HTML5).
+## 1. Veredicto sobre Reescritura de Código
 
----
+### **SÍ**
+**Migrar ViMARA de Unity (C#) a un stack WebAR nativo exige una reescritura del 100% del código de aplicación, lógica de UI y sistemas.**
 
-## 1. Explicit Definitive Answer on Code Rewrite
-
-### **YES**
-
-**Migrating ViMARA from Unity (C#) to a Native WebAR stack requires a 100% complete rewrite of all application source code, UI logic, engine interactions, and architectural components from scratch.**
-
-While raw 3D assets (`.gltf`/`.glb`), textures (`.png`/`.jpg`), and mathematical formulas can be salvaged, **zero C# source code, zero Unity scene files (`.unity`), zero UI Toolkit (`.uxml`/`.uss`) templates, zero HLSL shaders, and zero Unity prefabs can be converted automatically or executed natively inside a web browser.**
+Solo se salvan assets 3D binarios (`.gltf`/`.glb`), texturas (`.png`/`.jpg`) y fórmulas matemáticas conceptuales. Cero código C#, archivos de escena `.unity`, UI Toolkit (`.uxml`/`.uss`), shaders HLSL o prefabs pueden convertirse automáticamente.
 
 ---
 
-## 2. Comprehensive Technical Rationale & Code Comparison
+## 2. Comparativa Técnica y Salvabilidad
 
-### 2.1 Languages & Runtimes
+### 2.1 Lenguajes y Runtimes
 
-| Technical Metric | Unity C# Stack | Native WebAR (JavaScript/TypeScript) |
+| Métrica | Unity C# Stack | Native WebAR (JavaScript/TypeScript) |
 | :--- | :--- | :--- |
-| **Programming Language** | C# (.NET 8 / C# 12) | JavaScript (ES2023+) / TypeScript (v5+) |
-| **Runtime Environment** | Mono JIT / IL2CPP Ahead-Of-Time (AOT) C++ Native | V8 (Android/Chrome) / JavaScriptCore (iOS/Safari) JIT |
-| **Memory Management** | Managed Garbage Collection (Boehm GC / Incremental GC) | Generational V8 / JavaScriptCore Garbage Collector |
-| **Type System** | Static, strongly typed with compile-time metadata | Dynamic (JS) or static type-checking erased at compile (TS) |
-| **Execution Threading** | Multithreaded (C# Job System, Burst Compiler, `System.Threading`) | Single-threaded Event Loop, Web Workers for off-thread compute |
-
-#### Key Technical Disconnects:
-* C# primitives heavily used in ViMARA (`async`/`await` Task parallelism, LINQ, Extension Methods, Struct Pointers via `UnsafeUtility`, Struct-based Memory Layouts) have no direct 1:1 binary equivalents in JavaScript.
-* In Unity, calling engine API methods invokes low-overhead C++ native P/Invoke bindings behind `UnityEngine.Object`. In WebAR, standard Web APIs (DOM, WebGL2, WebXR) execute directly through browser host interfaces.
+| **Lenguaje** | C# (.NET 8 / C# 12) | JavaScript (ES2023+) / TypeScript (v5+) |
+| **Runtime** | Mono JIT / IL2CPP AOT C++ Native | V8 (Chrome) / JavaScriptCore (Safari) JIT |
+| **Memoria** | Managed GC (Boehm / Incremental) | Generational V8 / JSC GC |
+| **Concurrencia** | Multihilo (Job System, Burst, Threads) | Monohilo Event Loop, Web Workers |
 
 ---
 
-### 2.2 Component & Engine Architecture
+### 2.2 Arquitectura C# vs Three.js
 
-#### Unity Paradigm: Component-Based MonoBehaviour Lifecycle
-Unity structures scenes using `GameObjects` driven by attached `MonoBehaviour` scripts receiving engine tick callbacks (`Awake`, `Start`, `Update`, `FixedUpdate`):
-
+#### MonoBehaviour de Unity:
 ```csharp
-// Unity C# Script: ModelRotator.cs
 using UnityEngine;
 
 public class ModelRotator : MonoBehaviour
 {
     [SerializeField] private float rotationSpeed = 30.0f;
-
-    private void Update()
-    {
-        // Invoked automatically by Unity C++ engine loop every frame
+    private void Update() {
         transform.Rotate(Vector3.up, rotationSpeed * Time.deltaTime, Space.World);
     }
 }
 ```
 
-#### Three.js Paradigm: Scene Graph & Manual `requestAnimationFrame` Render Loop
-In Three.js, spatial nodes inherit from `THREE.Object3D`. There is no built-in `MonoBehaviour` event system; developers must explicitly implement an animation loop:
-
+#### Render Loop en Three.js:
 ```javascript
-// Native WebAR Three.js Script: ModelRotator.js
 import * as THREE from 'three';
 
 export class ModelRotator {
@@ -358,138 +252,41 @@ export class ModelRotator {
         this.object = threeObject;
         this.rotationSpeed = THREE.MathUtils.degToRad(rotationSpeed);
     }
-
-    // Must be called manually inside the render loop
     update(deltaTime) {
-        if (this.object) {
-            this.object.rotation.y += this.rotationSpeed * deltaTime;
-        }
+        if (this.object) this.object.rotation.y += this.rotationSpeed * deltaTime;
     }
 }
 
-// In main WebAR engine initialization:
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-
-const rotator = new ModelRotator(myLoadedGlbMesh, 30.0);
+// En el loop de renderizado:
+const rotator = new ModelRotator(loadedMesh, 30.0);
 const clock = new THREE.Clock();
-
-renderer.setAnimationLoop((timestamp, frame) => {
-    const deltaTime = clock.getDelta();
-    rotator.update(deltaTime);
+renderer.setAnimationLoop(() => {
+    rotator.update(clock.getDelta());
     renderer.render(scene, camera);
 });
 ```
 
 ---
 
-### 2.3 UI Systems: Unity uGUI / UI Toolkit vs. Web DOM / CSS3
+### 2.3 Matriz de Salvabilidad de Assets
 
-| UI Metric | Unity UI Toolkit / uGUI | Web Native UI (HTML5 / CSS3) |
-| :--- | :--- | :--- |
-| **Markup Language** | `.uxml` (Unity XML Schema) / Canvas Prefabs | Standard HTML5 (`<div`, `<button>`, `<custom-element>`) |
-| **Styling Language** | `.uss` (Unity Style Sheets — restricted CSS subset) | Native CSS3 (Flexbox, CSS Grid, Media Queries) |
-| **Render Layer** | Rendered into WebGL canvas context | Rendered on separate GPU compositing layers by browser engine |
-| **Event Pipeline** | `ClickEvent` / `PointerMoveEvent` via PanelSettings | Native DOM Event Listeners (`element.addEventListener`) |
-| **WebAR Overlay** | Requires WASM input translation layer | Supported natively via WebXR `domOverlay` API |
-
----
-
-### 2.4 Physics & Spatial Raycasting: PhysX vs. Web Physics & WebXR
-
-| Feature | Unity PhysX 4.1 / 5.x | JavaScript Physics Stack |
-| :--- | :--- | :--- |
-| **Engine Engine** | NVIDIA PhysX C++ engine integrated into Unity core | Cannon-es (pure JS), Ammo.js (Bullet WASM), Rapier.js (Rust WASM) |
-| **Execution Step** | Synchronized during `FixedUpdate` | Explicit `world.step(deltaTime)` in render loop |
-| **AR Touch Picking** | `Physics.Raycast(camera.ScreenPointToRay(touchPos))` | `THREE.Raycaster` against bounding meshes or WebXR Hit Test API |
-
-#### ViMARA Touch Interactions:
-ViMARA spatial interactions (plane hit-testing, model placement, scaling, translation, and rotation) rely on lightweight touch math rather than heavy rigid-body physics.
-* **In Unity AR Foundation:** Handled via `ARRaycastManager.Raycast()`.
-* **In Native WebAR:** Handled via **WebXR Hit Test API** (`XRFrame.getHitTestResults()`) on Android Chrome, or **MindAR Anchor Transforms** for image tracking. Touch gestures (pinch-to-scale, two-finger-rotate) are handled using lightweight JS libraries (e.g. `Hammer.js`) or native `PointerEvents`.
-
----
-
-### 2.5 Asset Salvageability Breakdown Table
-
-| Asset / Component Category | Reusable in WebAR? | Salvageability Status | Technical Rationale & Required Action |
+| Categoría Asset | ¿Reutilizable en WebAR? | Estado | Acción Requerida |
 | :--- | :---: | :---: | :--- |
-| **3D Models (`.gltf` / `.glb`)** | **YES** | **100% Salvageable** | Standard GLTF 2.0 files load identically in Unity (via GLTFast) and Three.js (via `GLTFLoader`). Meshes, nodes, and PBR materials transfer seamlessly. |
-| **Textures (`.png`, `.jpg`)** | **YES** | **100% Salvageable** | Color, Normal, Metallic/Roughness, and AO maps load directly into Three.js `TextureLoader`. |
-| **Embedded Animations** | **YES** | **100% Salvageable** | Keyframe and skeletal animations inside `.glb` files are parsed by Three.js `AnimationMixer` without changes. |
-| **Audio Assets (`.wav`, `.mp3`)** | **YES** | **100% Salvageable** | Audio files play natively using the Web Audio API or HTML5 `<audio>` tags. |
-| **Conceptual Math Formulas** | **YES (Conceptual)** | **Conceptual Only** | Bounding box calculation logic, scale clamps, and distance formulas can be rewritten line-by-line into JS/TS. |
-| **C# Source Code (`.cs`)** | **NO** | **0% Salvageable** | All MonoBehaviour components, manager singletons, and AR handlers must be completely rewritten in JavaScript/TypeScript. |
-| **Unity Scenes (`.unity`)** | **NO** | **0% Salvageable** | Proprietary YAML/binary scene files cannot be parsed by web engines. Scenes must be constructed programmatically in Three.js. |
-| **Unity Prefabs (`.prefab`)** | **NO** | **0% Salvageable** | Prefab structures must be converted into `.glb` modular files or Three.js `Group` instantiations. |
-| **Unity Shaders (HLSL / ShaderGraph)** | **NO** | **0% Salvageable** | HLSL shaders must be rewritten in GLSL (`ShaderMaterial`) or mapped to standard Three.js materials (`MeshStandardMaterial`). |
-| **UI Templates (`.uxml`, `.uss`)** | **NO** | **0% Salvageable** | Layouts must be completely rewritten in native HTML5 and CSS3. |
-| **Unity Package Dependencies** | **NO** | **0% Salvageable** | Packages like `AR Foundation`, `GLTFast`, `XR Interaction Toolkit`, and `NativeFilePicker` must be replaced with web APIs (`WebXR`, `MindAR`, `GLTFLoader`, HTML `<input type="file">`). |
+| **Modelos 3D (`.glb`)** | **SÍ** | **100% Salvable** | Carga directa en Three.js `GLTFLoader`. |
+| **Texturas (`.png`, `.jpg`)**| **SÍ** | **100% Salvable** | Carga directa en Three.js `TextureLoader`. |
+| **Animaciones Embedded** | **SÍ** | **100% Salvable** | Parseo en Three.js `AnimationMixer`. |
+| **Audio (`.wav`, `.mp3`)** | **SÍ** | **100% Salvable** | Reproducción con Web Audio API o `<audio>`. |
+| **Fórmulas Matemáticas** | **SÍ (Conceptual)** | **Conceptual** | Reescritura línea por línea a JS/TS. |
+| **Código C# (`.cs`)** | **NO** | **0% Salvable** | Reescritura total a JS/TS. |
+| **Escenas Unity (`.unity`)** | **NO** | **0% Salvable** | Reconstrucción programática en Three.js. |
+| **Prefabs (`.prefab`)** | **NO** | **0% Salvable** | Convertir a archivos `.glb` o Three.js `Group`. |
+| **Shaders HLSL** | **NO** | **0% Salvable** | Reescribir a GLSL (`ShaderMaterial`) o `MeshStandardMaterial`. |
+| **Plantillas UI (`.uxml`)** | **NO** | **0% Salvable** | Reescribir en HTML5 y CSS3 nativos. |
+| **Paquetes UPM** | **NO** | **0% Salvable** | Reemplazar por Web APIs (`WebXR`, `MindAR`, HTML `<input>`). |
 
 ---
 
-## 3. Unity WebGL Export vs. Native WebAR Stack Analysis
-
-Instead of rewriting the codebase, developers often ask: **"Can we simply build in Unity and export to WebGL?"**  
-The following architectural breakdown demonstrates why Unity WebGL export is **fundamentally unsuitable for mobile WebAR**.
-
-### 3.1 Unity WebGL Compilation Pipeline Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                       UNITY WEBGL COMPILATION PIPELINE                   │
-├─────────────────────────────────────────────────────────────────────────┤
-│  C# Source Code (.cs) + Unity Engine C++ Core                           │
-│        │                                                                │
-│        ▼                                                                │
-│  [ Mono CIL Compiler ]                                                  │
-│        │                                                                │
-│        ▼                                                                │
-│  IL2CPP (Intermediate Language to C++) Transpiler                      │
-│        │                                                                │
-│        ▼                                                                │
-│  C++ Codebase (100MB+ generated C++ files)                              │
-│        │                                                                │
-│        ▼                                                                │
-│  [ Emscripten LLVM Toolchain ]                                          │
-│        │                                                                │
-│        ├──────────────────────┬──────────────────────┐                  │
-│        ▼                      ▼                      ▼                  │
-│  build.wasm             build.js              build.data                │
-│  (WASM Core Module)     (JS Glue Code)        (Uncompressed Assets)     │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-#### Architectural Bottlenecks:
-1. **Emscripten Overhead:** Unity compiles its entire C++ engine core (garbage collector, physics engine, rendering engine, asset management) into a single monolithic WebAssembly (`.wasm`) binary.
-2. **Double Abstraction Layer:** Calls pass through C# -> IL2CPP C++ -> Emscripten WASM -> JS Glue Code -> Browser WebGL context, adding significant latency compared to direct JavaScript WebGL execution.
-
----
-
-### 3.2 WebAR Camera Access & WebXR Constraints
-
-* **WebGL Canvas Isolation:** Unity WebGL renders strictly inside an isolated HTML5 `<canvas>` element. The compiled WASM module runs in a sandboxed memory heap without direct access to browser device APIs.
-* **Camera Streaming Latency (`navigator.mediaDevices.getUserMedia`):** Native WebAR streams video directly into WebGL background textures with zero copy overhead. In Unity WebGL, capturing camera video requires custom **`.jslib` bridge scripts** that pull video frames, copy pixel arrays into WASM memory, and pass them as byte arrays to C#, introducing camera feed lag and heavy CPU overhead.
-* **iOS Safari WebXR Incompatibility (CRITICAL BLOCKER):**
-  - Android Chrome supports the W3C WebXR `immersive-ar` spec natively.
-  - **iOS Safari (iOS 17 & 18) does NOT support `immersive-ar`**. Apple keeps WebXR behind experimental developer flags that are disabled by default in WebKit.
-  - **Result:** Unity WebGL cannot access ARKit on iOS Safari natively. Plugins attempting to run AR inside Unity WebGL on iOS must perform pure JavaScript/WASM computer vision frame processing, resulting in severe lag and low frame rates.
-
----
-
-### 3.3 WebAR Plugin Landscape & Commercial Costs
-
-| Unity WebAR Solution | iOS Safari AR Support | Android Chrome AR Support | Licensing & Monthly Cost | Feasibility for ViMARA ($0 Constraint) |
-| :--- | :---: | :---: | :--- | :--- |
-| **WebXR Export (Mozilla / De-panther)** | ❌ **BROKEN (No WebXR on iOS)** | ✅ Works natively | Open Source ($0) | ❌ **UNSUITABLE**: Fails completely on iOS Safari. |
-| **Zappar Unity WebAR** | ✅ Works via WASM CV | ✅ Works | Proprietary ($150–$500+/mo) | ❌ **REJECTED**: Expensive fee violates $0 budget rule; free tier includes intrusive watermark. |
-| **MindAR WebGL Templates** | ⚠️ Unstable JS Bridge | ⚠️ Unstable JS Bridge | MIT ($0) | ❌ **UNSUITABLE**: Complex JS-to-WASM bridge causes memory leaks and frame drops. |
-| **8th Wall (Niantic)** | ✅ Excellent SLAM | ✅ Excellent SLAM | Commercial SaaS ($99–$1,250+/mo) | ❌ **REJECTED**: Prohibitive SaaS subscription cost. |
-
----
-
-### 3.4 Binary Size & Download Overhead Comparison
+## 3. Cuellos de Botella de Unity WebGL en Móvil
 
 ```
 ┌───────────────────────────────────────────────────────────────────────────────────┐
@@ -503,128 +300,38 @@ The following architectural breakdown demonstrates why Unity WebGL export is **f
 │ TOTAL DOWNLOAD:   22 MB - 70 MB    │ TOTAL DOWNLOAD:      5.7 MB - 31.8 MB        │
 │                                    │                                              │
 │ Cold Load Time (4G: 20 Mbps):      │ Cold Load Time (4G: 20 Mbps):                │
-│ 25.0s - 55.0 seconds               │ 1.5s - 4.5 seconds                           │
-│                                    │                                              │
-│ WASM Heap Parse Time:              │ JS Execution Time:                           │
-│ 5.0s - 12.0s (High CPU Spike)      │ 0.1s - 0.3s (Instant Render)                 │
+│ 25.0s - 55.0 segundos               │ 1.5s - 4.5 segundos                           │
 └────────────────────────────────────┴──────────────────────────────────────────────┘
 ```
 
----
-
-### 3.5 WASM Memory & Mobile Performance Constraints
-
-1. **iOS Safari RAM Limits & Out-Of-Memory (OOM) Crashes:**
-   - iOS Safari limits individual browser tab memory allocations to **~1.0GB – 1.4GB**.
-   - Unity WebGL requires pre-allocating a contiguous WebAssembly memory heap (e.g. 512MB–1024MB).
-   - When loading an architectural `.glb` model (a 30MB compressed GLB uncompresses to 200MB+ of geometry and 400MB+ of uncompressed RGBA GPU texture buffers), total RAM consumption exceeds Safari's strict allocation ceiling.
-   - **Result:** iOS Safari forcibly kills the web worker tab, presenting the browser crash overlay:  
-     *`"This webpage was reloaded because a problem occurred."`*
-2. **Garbage Collection Freeze Spikes:** Unity's C# Garbage Collector runs inside the single-threaded WASM heap. During GC sweeps, the entire rendering loop freezes, causing micro-stutters and frame drops.
-3. **WebGL Context Loss (`webglcontextlost`):** Under heavy memory pressure, mobile operating systems revoke WebGL canvas contexts, leaving the page as a permanent black screen.
-4. **Thermal Throttling & Battery Drain:** Executing Unity's heavy C++ engine inside WebAssembly alongside WebGL canvas rendering causes mobile System-on-Chips (SoCs) to heat rapidly. Thermal management throttles CPU clock speeds by 40–60% within 3–5 minutes, causing frame rates to drop from 30 FPS to 10–15 FPS.
+1. **Límite RAM iOS Safari & Crashes OOM:** Techo por pestaña de ~1.0–1.4 GB. La pila WASM + texturas 3D descompresas exceden el límite, provocando la recarga forzada del navegador.
+2. **Falta de WebXR en iOS Safari:** Safari no soporta `immersive-ar` nativo. Plugins como WebXR Export fallan en iOS Safari.
+3. **Estrangulamiento Térmico:** Compilación WASM intensa produce calentamiento de SoC móvil y caída de FPS de 60 a 15-20 FPS tras 3 min.
 
 ---
 
-## 4. Side-by-Side Technical Comparison Matrix
+## 4. Matriz Comparativa: Unity WebGL vs Native WebAR
 
-| Evaluation Dimension | Unity WebGL Export | Native Three.js WebAR Stack |
+| Dimensión | Unity WebGL Export | Native Three.js WebAR Stack |
 | :--- | :--- | :--- |
-| **Primary Programming Language** | C# | JavaScript (ES6+) / TypeScript |
-| **Code Reuse from Unity App** | 100% (within Unity project) | **0% (Requires 100% full rewrite of code)** |
-| **iOS Safari AR Support** | ❌ **Broken / Failed** (No WebXR on iOS) | ✅ **Fully Functional** (via `<model-viewer>` USDZ / MindAR) |
-| **Android Chrome AR Support** | ⚠️ Partial (Requires WebXR Export plugin) | ✅ **Fully Functional** (Native WebXR `immersive-ar`) |
-| **Engine Download Size** | ❌ **15 MB - 40 MB+** (compressed WASM + Data) | ✅ **< 1.5 MB** (Three.js + MindAR bundled) |
-| **Cold Load Time (4G Mobile)** | ❌ **25 to 55 seconds** | ✅ **1.5 to 4.0 seconds** |
-| **Mobile RAM Footprint** | ❌ **800 MB - 1.5 GB+** (High OOM Crash Risk) | ✅ **150 MB - 350 MB** (Highly Stable) |
-| **Camera Access Latency** | ❌ High (JS-to-WASM bridge copy overhead) | ✅ Zero-copy native browser texture binding |
-| **Licensing Cost ($0 Constraint)** | ⚠️ Free Unity, but commercial plugins cost $150+/mo | ✅ **100% Free & Open Source** (MIT / Apache 2.0) |
-| **UI System Integration** | ❌ WebGL Canvas (Inflexible) | ✅ Native HTML5 / CSS3 DOM Overlays |
-| **Dynamic Model Loading (`.glb`)** | ⚠️ Supported via GLTFast WASM compilation | ✅ Native via `GLTFLoader` (Fast & lightweight) |
-| **Thermal & Battery Impact** | ❌ Extreme CPU/GPU heating & battery drain | ✅ Low to Moderate energy consumption |
-| **Overall Production Viability** | ❌ **INVIABLE FOR MOBILE WEBAR** | ✅ **VIABLE FOR WEB PREVIEWS** |
+| **Lenguaje** | C# | JavaScript / TypeScript |
+| **Reuso de Código** | 100% (dentro de Unity) | **0% (Reescritura total)** |
+| **AR en iOS Safari** | ❌ **Inviable** (Sin WebXR) | ✅ **Funcional** (`<model-viewer>` / MindAR) |
+| **AR en Android Chrome**| ⚠️ Parcial (Plugin WebXR) | ✅ **Funcional** (`immersive-ar` nativo) |
+| **Peso Engine** | ❌ **15 MB – 40 MB+** | ✅ **< 1.5 MB** |
+| **Carga en 4G** | ❌ **25 a 55 segundos** | ✅ **1.5 a 4.0 segundos** |
+| **Pico Memoria RAM** | ❌ **800 MB – 1.5 GB+** | ✅ **150 MB – 350 MB** |
+| **Costo Licencias ($0)**| ⚠️ Plugins de pago $150+/mes| ✅ **100% Libre (MIT / Apache 2.0)** |
+| **Viabilidad Producción**| ❌ **INVIABLE EN AR MÓVIL** | ✅ **VIABLE PARA WEB PREVIEW** |
 
 ---
 
-# Part 3: Strategic Recommendations & Action Plan for ViMARA
+# Part 3: Strategic Recommendations for ViMARA
 
-Based on the technical findings from Part 1 and Part 2, the following strategic roadmap is established for **Project ViMARA**:
-
----
-
-## 1. Recommended iOS Compilation Pipeline (Windows Developer Workflow)
-
-Windows developers working on ViMARA should implement a **Dual-Pipeline Build & Deployment Strategy**:
-
-```
-+-----------------------------------------------------------------------------------+
-|                        RECOMMENDED VIMARA iOS BUILD PIPELINE                      |
-+-----------------------------------------------------------------------------------+
-
-Step 1: Local Development on Windows PC
-  ├── Develop, test, and debug inside Unity 6 Editor (6000.3.10f1) on Windows.
-  └── Push committed C# code to GitHub / Git repository.
-
-Step 2: Automated Cloud Compilation (Codemagic or GitHub Actions)
-  ├── Primary CI Builder: Codemagic Free Tier (500 free M1 Mac minutes/month = ~35 builds/mo).
-  ├── Fallback CI Builder: GitHub Actions with game-ci/unity-builder (200 free macOS minutes/mo).
-  └── Artifact Output: Download compiled, unsigned or development .ipa binary to Windows PC.
-
-Step 3: Free Windows Sideloading & Physical Device Testing ($0 Cost)
-  ├── Tool: Sideloadly or AltServer on Windows.
-  ├── Authentication: Free Apple ID (Personal Team).
-  └── Execution: Connect iPhone/iPad via USB or Wi-Fi. Sideloadly generates a 7-day personal
-      provisioning profile on-the-fly, signs the .ipa, and installs it onto the physical device.
-```
-
-* **Cost:** **$0.00** (Zero dollars spent on Apple Developer fees, cloud VMs, or Unity subscriptions).
-* **Developer Velocity:** Delivers fast build turnarounds, automated CI compilation, and instant on-device testing.
-
----
-
-## 2. Architecture Recommendation: Hybrid Dual-Tier Model
-
-To maximize performance, feature completeness, and accessibility, ViMARA must **avoid Unity WebGL export** and adopt a **Hybrid Dual-Tier Architecture**:
-
-```
-                                  ┌─────────────────────────────────────────┐
-                                  │             PROJECT VIMARA              │
-                                  └────────────────────┬────────────────────┘
-                                                       │
-                                 ┌─────────────────────┴─────────────────────┐
-                                 ▼                                           ▼
-                   ┌───────────────────────────┐               ┌───────────────────────────┐
-                   │          TIER 1           │               │          TIER 2           │
-                   │    PRIMARY NATIVE APP     │               │   OPTIONAL WEB PREVIEW    │
-                   │   (Unity 6 + AR Foundation)│               │   (Native WebAR Stack)    │
-                   └─────────────┬─────────────┘               └─────────────┬─────────────┘
-                                 │                                           │
-                   ┌─────────────┴─────────────┐               ┌─────────────┴─────────────┐
-                   │ • Native Android (.apk)   │               │ • Pure JS (No WASM/Unity) │
-                   │ • Native iOS (.ipa)       │               │ • Google <model-viewer>   │
-                   │ • Full 60 FPS Performance │               │ • MindAR.js + Three.js    │
-                   │ • Dynamic GLTF Loading    │               │ • Fast 2s QR-Code Load    │
-                   │ • Local SQLite Caching    │               │ • Basic Model Inspection  │
-                   └───────────────────────────┘               └───────────────────────────┘
-```
-
-### Tier 1: Primary Platform — Native Mobile Application (Unity 6 + AR Foundation 6.3.3)
-* **Core Technology:** Unity 6 (`6000.3.10f1`), AR Foundation 6.3.3 (ARKit / ARCore), GLTFast 6.x.
-* **Target Platforms:** Native Android (`.apk` / `.aab`) and Native iOS (`.ipa`).
-* **Why Tier 1:**
-  - Preserves 100% of existing Unity C# source code, UI Toolkit layouts, manager logic, and AR placement systems.
-  - Delivers native **60 FPS AR performance** with hardware-accelerated surface detection, plane occlusion, and light estimation.
-  - Supports dynamic runtime downloading and parsing of architectural `.glb` models via GLTFast with local disk caching.
-  - Eliminates browser tab RAM constraints and Safari OOM crashes.
-
-### Tier 2: Secondary Platform — Lightweight Web Preview (Native WebAR Stack)
-* **Core Technology:** Google **`<model-viewer>`** (for Quick Look AR plane placement) and **MindAR.js + Three.js** (for Web-based image tracking).
-* **Target Environment:** Standard Mobile Web Browsers (iOS Safari & Android Chrome) via QR-Code scanning.
-* **Why Tier 2 (Non-Unity WebAR):**
-  - **Zero Unity WebGL Export:** Completely avoids Unity WebGL compilation, eliminating WASM memory crashes and multi-megabyte bundle downloads.
-  - **Instant Load Time:** Total bundle size is **< 1.5 MB**, loading in under 2 seconds over 4G networks.
-  - **Cross-Platform AR Support:** Uses Google `<model-viewer>` to automatically trigger native iOS AR Quick Look (`.usdz`) on Safari and WebXR `immersive-ar` on Android Chrome.
-  - Ideal for rapid client previews, marketing landing pages, and instant QR-code architectural model viewing without installing an application.
-
----
-*Report synthesized and verified by worker_report — Master Technical Synthesis Subagent.*
+1. **Pipeline iOS desde Windows ($0 Costo):**
+   - Desarrollo local en Unity 6 en Windows.
+   - Compilación automatizada en **Codemagic** (500 min M1 gratis/mes).
+   - Sideloading en iPhone/iPad con **Sideloadly** y Personal Apple ID Gratuita (renovación 7 días).
+2. **Modelo Arquitectónico Híbrido:**
+   - **Tier 1 (App Nativa Móvil Principal):** Unity 6 + AR Foundation 6.3.3 + GLTFast + UI Toolkit. Garantiza 60 FPS, seguimiento robusto de planos y marcadores dinámicos offline.
+   - **Tier 2 (Módulo Web Secundario):** Google `<model-viewer>` (planos) y MindAR.js + Three.js (marcadores) para previsualización web ultraligera sin instalar apps.
