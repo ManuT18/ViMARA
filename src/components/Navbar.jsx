@@ -26,86 +26,46 @@ export default function Navbar() {
   const currentStep = getStepIndex(location.pathname);
 
   return (
-    <nav className="glass-panel" style={{
-      margin: '16px 24px 0 24px',
-      padding: '14px 28px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      position: 'sticky',
-      top: '16px',
-      zIndex: 100
-    }}>
+    <nav className="glass-panel navbar-container">
       {/* Brand Header */}
       <div 
+        className="navbar-brand"
         onClick={() => navigate('/')}
-        style={{ display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer' }}
       >
-        <div style={{
-          width: '42px',
-          height: '42px',
-          borderRadius: '12px',
-          background: 'var(--accent-gradient)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 4px 15px var(--accent-glow)'
-        }}>
-          <Box size={24} color="#ffffff" />
+        <div className="navbar-logo">
+          <Box size={22} color="#ffffff" />
         </div>
-        <div>
-          <h1 style={{ fontSize: '1.4rem', fontWeight: '700', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-            ViMARA <span className="gradient-text">WebAR</span>
+        <div className="navbar-title-group">
+          <h1 className="navbar-title">
+            ViMARA
           </h1>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            Visualizador de Maquetas 3D para Arquitectura
+          <p className="navbar-subtitle">
+            Visualizador de Maquetas de Arquitectura en Realidad Aumentada
           </p>
         </div>
       </div>
 
-      {/* Navigation Breadcrumb / Flow Steps */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      {/* Steps Progress Indicator (Mobile Friendly) */}
+      <div className="navbar-steps">
         {steps.map((step, idx) => {
           const Icon = step.icon;
           const isActive = location.pathname === step.path;
           const isPassed = currentStep > idx;
 
           return (
-            <div key={step.path} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <React.Fragment key={step.path}>
               <button
                 onClick={() => navigate(step.path)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '6px 14px',
-                  borderRadius: '20px',
-                  background: isActive 
-                    ? 'rgba(59, 130, 246, 0.2)' 
-                    : isPassed 
-                      ? 'rgba(255, 255, 255, 0.05)' 
-                      : 'transparent',
-                  border: isActive 
-                    ? '1px solid var(--accent-primary)' 
-                    : '1px solid transparent',
-                  color: isActive 
-                    ? '#ffffff' 
-                    : isPassed 
-                      ? 'var(--text-primary)' 
-                      : 'var(--text-muted)',
-                  fontSize: '0.82rem',
-                  fontWeight: isActive ? '600' : '400',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
+                className={`navbar-step-btn ${isActive ? 'active' : ''} ${isPassed ? 'passed' : ''}`}
+                title={step.label}
               >
-                <Icon size={15} color={isActive ? 'var(--accent-primary)' : 'currentColor'} />
-                <span>{step.label}</span>
+                <Icon size={16} />
+                <span className="navbar-step-label">{step.label}</span>
               </button>
               {idx < steps.length - 1 && (
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>/</span>
+                <span className="navbar-step-divider">/</span>
               )}
-            </div>
+            </React.Fragment>
           );
         })}
       </div>
