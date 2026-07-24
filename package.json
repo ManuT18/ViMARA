@@ -15,7 +15,7 @@
     "mind-ar": "^1.2.5",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "three": "^0.185.1"
+    "three": "~0.183.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.17",
