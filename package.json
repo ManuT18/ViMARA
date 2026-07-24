@@ -12,7 +12,6 @@
   "dependencies": {
     "@google/model-viewer": "^4.3.1",
     "lucide-react": "^1.26.0",
-    "mind-ar": "^1.2.5",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "three": "~0.183.0"
