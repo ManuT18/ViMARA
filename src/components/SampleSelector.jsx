@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, Box, Home } from 'lucide-react';
+import { Building2, CheckCircle2 } from 'lucide-react';
 
 const SAMPLES = [
   {
@@ -27,11 +27,11 @@ const SAMPLES = [
 
 export default function SampleSelector({ onSelectSample, activeSampleId }) {
   return (
-    <div className="glass-panel" style={{ padding: '24px' }}>
-      <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '4px' }}>
+    <div className="glass-panel" style={{ padding: '20px' }}>
+      <h3 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '4px', color: 'var(--text-primary)' }}>
         Maquetas de Prueba Instantáneas
       </h3>
-      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
+      <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '14px', lineHeight: 1.4 }}>
         Toca cualquier ejemplo para probar la Realidad Aumentada sin subir un archivo:
       </p>
 
@@ -42,35 +42,47 @@ export default function SampleSelector({ onSelectSample, activeSampleId }) {
             <div
               key={sample.id}
               onClick={() => onSelectSample(sample)}
-              className="glass-card"
+              className="glass-card touch-card"
               style={{
-                padding: '14px 18px',
+                padding: '12px 16px',
+                minHeight: '56px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                borderColor: isActive ? 'var(--accent-primary)' : 'rgba(255,255,255,0.08)',
-                background: isActive ? 'rgba(59, 130, 246, 0.12)' : 'rgba(255,255,255,0.03)'
+                borderColor: isActive ? 'var(--accent-primary)' : 'var(--border-light)',
+                background: isActive ? 'rgba(37, 99, 235, 0.06)' : '#ffffff',
+                boxShadow: isActive ? '0 4px 12px rgba(37, 99, 235, 0.12)' : 'var(--shadow-sm)',
+                borderRadius: 'var(--radius-lg)',
+                userSelect: 'none'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                 <div style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '8px',
-                  background: isActive ? 'var(--accent-gradient)' : 'rgba(255,255,255,0.06)',
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: 'var(--radius-md)',
+                  background: isActive ? 'var(--accent-gradient)' : 'var(--bg-tertiary)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: isActive ? '#fff' : 'var(--text-secondary)'
+                  color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                  flexShrink: 0
                 }}>
-                  <Building2 size={18} />
+                  <Building2 size={20} />
                 </div>
-                <div>
-                  <h4 style={{ fontSize: '0.9rem', fontWeight: '600', color: isActive ? '#fff' : 'var(--text-primary)' }}>
-                    {sample.name}
-                  </h4>
-                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <h4 style={{
+                      fontSize: '0.92rem',
+                      fontWeight: '700',
+                      color: isActive ? 'var(--accent-primary)' : 'var(--text-primary)'
+                    }}>
+                      {sample.name}
+                    </h4>
+                    {isActive && <CheckCircle2 size={16} color="var(--accent-primary)" />}
+                  </div>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.3 }}>
                     {sample.description}
                   </p>
                 </div>

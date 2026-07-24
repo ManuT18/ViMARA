@@ -1,11 +1,10 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Smartphone, RotateCw, Eye, Sun, Layers, Sparkles } from 'lucide-react';
+import { Smartphone, RotateCw, Eye, Sparkles } from 'lucide-react';
 
 export default function ModelViewer({ modelUrl, modelName, format }) {
   const viewerRef = useRef(null);
   const [autoRotate, setAutoRotate] = useState(true);
   const [whiteModelMode, setWhiteModelMode] = useState(false);
-  const [arSupported, setArSupported] = useState(true);
 
   // Toggle white-model mode (Fase 1 - Geometry only look)
   useEffect(() => {
@@ -14,13 +13,12 @@ export default function ModelViewer({ modelUrl, modelName, format }) {
 
     if (whiteModelMode) {
       viewer.style.setProperty('--poster-color', '#ffffff');
-      // Apply white override material if needed
     }
   }, [whiteModelMode]);
 
   return (
     <div className="glass-panel" style={{
-      padding: '24px',
+      padding: '20px',
       display: 'flex',
       flexDirection: 'column',
       gap: '16px',
@@ -28,24 +26,35 @@ export default function ModelViewer({ modelUrl, modelName, format }) {
       overflow: 'hidden'
     }}>
       {/* Top Controls Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '12px'
+      }}>
         <div>
-          <h2 style={{ fontSize: '1.2rem', fontWeight: '600' }}>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--text-primary)' }}>
             {modelName || 'Maqueta Arquitectónica'}
           </h2>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            Formato: <strong style={{ color: 'var(--accent-primary)' }}>{format?.toUpperCase() || 'GLB'}</strong>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: '500' }}>
+            Formato: <strong style={{ color: 'var(--accent-primary)', background: 'var(--accent-light)', padding: '2px 8px', borderRadius: '6px' }}>{format?.toUpperCase() || 'GLB'}</strong>
           </span>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button 
             className="btn-secondary"
             onClick={() => setAutoRotate(!autoRotate)}
             title="Conmutar Rotación Automática"
-            style={{ padding: '8px 12px' }}
+            style={{ 
+              minHeight: '48px', 
+              padding: '10px 16px',
+              fontSize: '0.88rem'
+            }}
           >
-            <RotateCw size={16} className={autoRotate ? 'spin' : ''} />
+            <RotateCw size={18} className={autoRotate ? 'spin' : ''} />
             <span>{autoRotate ? 'Giro ON' : 'Giro OFF'}</span>
           </button>
 
@@ -54,28 +63,32 @@ export default function ModelViewer({ modelUrl, modelName, format }) {
             onClick={() => setWhiteModelMode(!whiteModelMode)}
             title="Fase 1: Modo Maqueta Blanca"
             style={{
-              padding: '8px 12px',
-              borderColor: whiteModelMode ? 'var(--accent-primary)' : 'var(--border-glass)',
+              minHeight: '48px',
+              padding: '10px 16px',
+              fontSize: '0.88rem',
+              borderColor: whiteModelMode ? 'var(--accent-primary)' : 'var(--border-light)',
+              background: whiteModelMode ? 'var(--accent-light)' : '#ffffff',
               color: whiteModelMode ? 'var(--accent-primary)' : 'var(--text-primary)'
             }}
           >
-            <Eye size={16} />
+            <Eye size={18} />
             <span>{whiteModelMode ? 'Modo Blanco' : 'Texturas'}</span>
           </button>
         </div>
       </div>
 
-      {/* 3D Container using Google <model-viewer> */}
+      {/* 3D Container using Google <model-viewer> with Light Theme Studio Styling */}
       <div style={{
-        height: '460px',
+        height: 'clamp(320px, 50vh, 460px)',
         width: '100%',
-        borderRadius: 'var(--radius-md)',
-        background: 'radial-gradient(circle at center, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%)',
+        borderRadius: 'var(--radius-xl)',
+        background: 'radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%)',
         position: 'relative',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        border: '1px solid rgba(255, 255, 255, 0.05)'
+        border: '1px solid var(--border-light)',
+        boxShadow: 'inset 0 2px 6px rgba(15, 23, 42, 0.03)'
       }}>
         <model-viewer
           ref={viewerRef}
@@ -86,9 +99,10 @@ export default function ModelViewer({ modelUrl, modelName, format }) {
           camera-controls
           touch-action="pan-y"
           auto-rotate={autoRotate ? "" : undefined}
-          shadow-intensity="1.5"
+          shadow-intensity="1.2"
+          shadow-softness="0.8"
           exposure="1.0"
-          style={{ width: '100%', height: '100%', borderRadius: 'var(--radius-md)' }}
+          style={{ width: '100%', height: '100%', borderRadius: 'var(--radius-xl)' }}
         >
           {/* Custom AR Trigger Button inside <model-viewer> slot */}
           <button
@@ -96,9 +110,13 @@ export default function ModelViewer({ modelUrl, modelName, format }) {
             className="btn-primary"
             style={{
               position: 'absolute',
-              bottom: '20px',
-              right: '20px',
-              zIndex: 10
+              bottom: '16px',
+              right: '16px',
+              zIndex: 10,
+              minHeight: '48px',
+              padding: '12px 20px',
+              borderRadius: 'var(--radius-lg)',
+              boxShadow: 'var(--shadow-lg)'
             }}
           >
             <Smartphone size={20} />
@@ -114,11 +132,12 @@ export default function ModelViewer({ modelUrl, modelName, format }) {
         justifyContent: 'space-between',
         fontSize: '0.85rem',
         color: 'var(--text-secondary)',
-        padding: '4px 8px'
+        padding: '4px 6px',
+        fontWeight: '500'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Sparkles size={16} color="var(--accent-primary)" />
-          <span>Arrastra para rotar · Pellizca para zoom · Toca AR desde tu iPhone / Android</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Sparkles size={18} color="var(--accent-primary)" />
+          <span>Arrastra para rotar · Pellizca para zoom · Toca AR desde tu móvil</span>
         </div>
       </div>
     </div>
