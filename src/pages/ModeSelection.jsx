@@ -31,19 +31,18 @@ export default function ModeSelection() {
       }}
     >
       {/* Top Header & Navigation */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button className="btn-secondary" onClick={handleBackToMenu}>
+      <div className="mode-selection-header">
+        <button className="btn-secondary nav-action-btn" onClick={handleBackToMenu}>
           <ArrowLeft size={18} />
-          <span>Volver al Menú Principal</span>
+          <span>Volver al Menú</span>
         </button>
 
         <button 
-          className="btn-secondary" 
+          className="btn-secondary nav-action-btn help-btn" 
           onClick={() => setIsInfoModalOpen(true)}
-          style={{ borderColor: 'rgba(59, 130, 246, 0.4)', color: '#60a5fa' }}
         >
           <Info size={18} />
-          <span>Información de Selección</span>
+          <span>¿Necesitás Ayuda?</span>
         </button>
       </div>
 

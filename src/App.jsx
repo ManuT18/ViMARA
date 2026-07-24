@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './context/AppProvider';
+import ScrollToTop from './components/ScrollToTop';
 import Navbar from './components/Navbar';
 import MainMenu from './pages/MainMenu';
 import ModeSelection from './pages/ModeSelection';
@@ -11,6 +12,7 @@ import './App.css';
 export default function App() {
   return (
     <AppProvider>
+      <ScrollToTop />
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <Navbar />
 
