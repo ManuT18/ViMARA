@@ -1,122 +1,81 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import React, { useState } from 'react';
+import Navbar from './components/Navbar';
+import ModelViewer from './components/ModelViewer';
+import FileUploader from './components/FileUploader';
+import SampleSelector from './components/SampleSelector';
+import { Sparkles, Layers, Box, CheckCircle } from 'lucide-react';
+import './App.css';
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [currentModel, setCurrentModel] = useState({
+    id: 'sample-helmet',
+    name: 'Casco Futurista (PBR / Texturas)',
+    format: 'glb',
+    url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb'
+  });
+
+  const handleSelectSample = (sample) => {
+    setCurrentModel(sample);
+  };
+
+  const handleFileSelect = (uploadedFile) => {
+    setCurrentModel({
+      id: 'custom-' + Date.now(),
+      name: uploadedFile.name,
+      format: uploadedFile.format,
+      url: uploadedFile.url
+    });
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Navbar />
 
-      <div className="ticks"></div>
+      <main style={{
+        maxWidth: '1280px',
+        margin: '0 auto',
+        padding: '24px',
+        width: '100%',
+        display: 'grid',
+        gridTemplateColumns: '1fr 380px',
+        gap: '24px',
+        alignItems: 'start'
+      }} className="animate-fade-in">
+        {/* Main 3D / WebAR View */}
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <ModelViewer 
+            modelUrl={currentModel.url}
+            modelName={currentModel.name}
+            format={currentModel.format}
+          />
+        </section>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        {/* Sidebar Controls */}
+        <aside style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <FileUploader 
+            onFileSelect={handleFileSelect}
+            activeFileName={currentModel.id.startsWith('custom-') ? currentModel.name : null}
+          />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+          <SampleSelector 
+            onSelectSample={handleSelectSample}
+            activeSampleId={currentModel.id}
+          />
+
+          {/* Quick Info Box */}
+          <div className="glass-panel" style={{ padding: '20px' }}>
+            <h4 style={{ fontSize: '0.95rem', fontWeight: '600', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Layers size={18} color="var(--accent-primary)" />
+               Compatibilidad Móvil
+            </h4>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+              - <strong>iOS (iPhone / iPad):</strong> Usa AR Quick Look nativo de Apple.<br />
+              - <strong>Android:</strong> Usa Google Scene Viewer.<br />
+              - <strong>Formatos:</strong> Soporta <code>.glb</code> (Fase 1 y 2), <code>.stl</code> y <code>.obj</code>.
+            </p>
+          </div>
+        </aside>
+      </main>
+    </div>
+  );
 }
-
-export default App
