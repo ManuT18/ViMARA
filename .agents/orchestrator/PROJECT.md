@@ -1,23 +1,26 @@
-# Project: ViMARA 3D File Format Standards Analysis
+# Project: ViMARA Mobile-First WebApp Migration & Architecture
 
 ## Mission
-Investigate 3D modeling software export capabilities (SketchUp, AutoCAD, Revit, Blender, Rhino) and conduct technical comparison of 3D formats (.glb/.gltf, .stl, .obj, .fbx, .dae, etc.) to define a curated list of 2-4 official 3D file formats for the ViMARA WebAR platform. Produce `3D_File_Format_Standards_ViMARA.md` in the project root.
+Migrate the ViMARA WebApp to a mobile-first design with a Light Theme and a multi-page 4-step navigation flow matching Legacy Unity (`AppUIPresenter.cs`), evaluate backend architecture needs, clean/summarize documentation in `Documentacion/`, and consult user on design/UX decisions.
+
+## Architecture & Code Layout
+- Root Directory: `c:\Users\manut\Documentos\UNIVERSIDAD\BENTRE25\ViMARA`
+- Frontend Framework: React 19 + Vite 8 + CSS / Modern Design Tokens
+- Routing: `react-router-dom`
+- 3D / WebAR Engine: `@google/model-viewer` + Three.js
+- Documentation Directory: `Documentacion/`
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| 1 | R1 Export Analysis | Export options in SketchUp Free Web & Pro Desktop + AutoCAD, Revit, Blender, Rhino. Identify native formats vs plugins required. | None | DONE |
-| 2 | R2 Technical Comparison | Technical analysis of formats (.glb/.gltf, .stl, .obj, .fbx, .dae, etc.) for WebAR: Phase 1 (untextured geometry size/speed), Phase 2 (PBR & complex materials), WebAR support (Three.js & Google <model-viewer>). | None | DONE |
-| 3 | R3 Format Selection & Report Drafting | Recommend 2-4 official formats for ViMARA with complete technical justification balancing user workflow compatibility vs WebAR optimization. Draft `3D_File_Format_Standards_ViMARA.md` in project root. | M1, M2 | DONE |
-| 4 | Verification & Audit | Independent review and forensic audit of `3D_File_Format_Standards_ViMARA.md` against acceptance criteria. | M3 | DONE (CLEAN) |
+| 1 | M1 Backend Architecture Report | Evaluate 3D models, Wasm format conversion, storage, auth, hosting needs. Produce `Documentacion/Backend_Architecture_Report.md`. | None | DONE |
+| 2 | M2 Documentation Cleanup | Review, summarize, and clean up technical fluff across `Documentacion/` while preserving key data. | None | DONE |
+| 3 | M3 UI/UX Light Theme & Mobile-First | Mobile-first Light Theme, CSS tokens, touch targets (≥48px), bottom sheets, micro-interactions. | None | DONE |
+| 4 | M4 React 4-Step Navigation Flow | Restructure React app into 4-step router flow: MainMenu -> ModeSelection -> ModelImport -> ARVisualization matching `AppUIPresenter.cs`. | M3 | DONE |
+| 5 | M5 Verification & Forensic Audit | Validate build (`npm run build`), lint (`npm run lint`), test UI flow, and run Forensic Integrity Audit. | M1, M2, M4 | DONE (CLEAN) |
 
-## Deliverable Specification
-- Output path: `c:\Users\manut\Documentos\UNIVERSIDAD\BENTRE25\ViMARA\3D_File_Format_Standards_ViMARA.md` (GENERATED & VERIFIED)
-- Verified Contents:
-  1. Software Export Analysis (SketchUp Free Web, SketchUp Pro Desktop, AutoCAD, Revit, Blender, Rhino 7 & 8) - native formats vs plugins needed and licensing constraints.
-  2. Format Technical Comparison (.glb/.gltf, .stl, .obj/.mtl, .fbx, .dae, .usdz):
-     - Phase 1: Base geometry file size, vertex/face overhead ($6V$ vs $V$), mobile browser parsing speed (ArrayBuffer zero-copy vs text regex), Draco & `KHR_mesh_quantization`.
-     - Phase 2: PBR textures (Cook-Torrance BRDF GGX vs legacy Phong), material definitions, GPU texture supercompression (`KHR_texture_basisu` KTX2 VRAM savings from 16.77MB to 2.1MB), scene graph, animations.
-     - WebAR Compatibility: Three.js loaders (`GLTFLoader`, `OBJLoader`, `STLLoader`, `FBXLoader`, `ColladaLoader`), Google `<model-viewer>` native support, iOS Quick Look (`.usdz`) / Android Scene Viewer (`.glb`) protocols.
-  3. Conversion & Pipeline Architecture: $0-cost client-side WebAssembly conversion pipeline (`ViMARAModelPipeline` JS class with `GLTFExporter`, `DRACOLoader`, `USDZExporter`, architectural clay shader, and automatic unit scaling).
-  4. Final Curated Format Selection (Tier 1: `.glb`/`.gltf`, Tier 2: `.obj`/`.stl`, Tier 3: `.usdz`) with complete technical justification matrix and 6 step-by-step export guides.
+## Interface Contracts & Navigation Steps
+1. `/` or `/main-menu`: **Step 1 MainMenu** - Welcome, branding, enter app trigger.
+2. `/mode-selection`: **Step 2 ModeSelection** - Marker vs Plane tracking selection, info modal.
+3. `/model-import`: **Step 3 ModelImport** - Upload 3D file (`.glb`, `.gltf`, `.stl`, `.obj`), select sample model, preview info.
+4. `/ar-view`: **Step 4 ARVisualization** - WebAR view with `<model-viewer>`, full screen toggle, AR trigger button, back button.

@@ -77,3 +77,20 @@ Proponer una **lista curada y reducida de formatos (ej. 2 a 4 tipos de archivos)
 - [ ] El reporte lista claramente los formatos que SketchUp y otros softwares líderes pueden exportar.
 - [ ] El reporte compara directamente `.stl`, `.obj` y `.glb`/`.gltf` frente al soporte de texturas futuras, peso web y soporte de Three.js / model-viewer.
 - [ ] El documento finaliza con un veredicto recomendando una pequeña lista de formatos oficiales para ViMARA, justificando por qué brindan la mejor compatibilidad general.
+
+## 2026-07-24T04:04:28Z
+
+El objetivo es migrar la WebApp de ViMARA hacia un diseño **mobile-first**, con un **tema claro (Light Theme)** y un sistema de **navegación multipágina**. 
+
+Actualmente el flujo está todo en una sola página. Necesitamos replicar el flujo de la aplicación original de Unity (`Legacy_Unity/Assets/Scripts/UI/AppUIPresenter.cs`), el cual es:
+1. **Pantalla Principal (MainMenu)**: Bienvenida.
+2. **Selección de Modo (ModeSelection)**: El usuario elige si quiere usar seguimiento por "Marcador" o "Plano".
+3. **Importación de Modelo (ModelImport)**: Dependiendo de lo anterior, se envía al usuario a una pantalla para subir su archivo 3D.
+4. **Visualización AR**: Una vez cargado, inicia la experiencia de Realidad Aumentada.
+
+**Requisitos para el equipo de agentes:**
+- **Agente de Diseño (UI/UX)**: Encargado de adaptar el sistema actual de diseño (CSS/Tailwind o Vanilla CSS) hacia un tema claro muy premium, moderno y pensado exclusivamente para pantallas táctiles (botones grandes, micro-interacciones, bottom-sheets).
+- **Agente de Frontend (React/Vite)**: Encargado de implementar el enrutamiento (por ejemplo, con `react-router-dom`) y dividir los componentes actuales para respetar el flujo de 4 pasos descrito arriba.
+- **Agente Arquitecto Backend**: Encargado de analizar la arquitectura completa del proyecto y los requerimientos funcionales (modelos 3D, conversiones de formato, autenticación, almacenamiento) para evaluar si es necesario implementar algún tipo de Backend. Deberá entregar un reporte **breve y directo** (sin ser excesivamente complejo) con sus conclusiones principales y propuestas arquitectónicas.
+- **Agente Técnico de Documentación**: Encargado de revisar todos los documentos y reportes analíticos generados previamente en la carpeta de `Documentacion/`. Su misión es resumir, limpiar y quitar el exceso de verbosidad, tecnicismos innecesarios o cosas irrelevantes, pero preservando cuidadosamente la información útil que servirá a futuro.
+- **Interacción con el usuario**: Los agentes especializados deben consultar conmigo (el usuario) si tienen dudas de diseño o UX durante el proceso antes de tomar decisiones irreversibles.

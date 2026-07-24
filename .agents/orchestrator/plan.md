@@ -1,20 +1,21 @@
-# Orchestration Plan: AR Foundation vs Vuforia & WebAR Viability
+# Orchestration Plan: ViMARA Mobile-First WebApp Migration
 
 ## Phase 1: Setup & Initialization
-- [x] Create working directory `.agents/orchestrator/`
-- [x] Create state & memory files (`ORIGINAL_REQUEST.md`, `BRIEFING.md`, `PROJECT.md`, `plan.md`, `progress.md`, `context.md`)
-- [x] Start heartbeat timer
+- [x] Update state & memory files (`ORIGINAL_REQUEST.md`, `BRIEFING.md`, `PROJECT.md`, `plan.md`, `progress.md`)
+- [ ] Start heartbeat timer
 
-## Phase 2: Domain Research & Fact-Gathering (Parallel Explorers)
-- [ ] **Explorer 1 (`explorer_r1_native_ar`)**: Research AR Foundation vs Vuforia (versions 2023-2024, plane tracking, image tracking marker stability, dynamic runtime 3D model importing, licensing & cost breakdown).
-- [ ] **Explorer 2 (`explorer_r2_webar_viability`)**: Research WebAR viability on mobile iOS (Safari/WebKit) and Android (Chrome/ARCore), Unity WebGL export for AR (WebXR export, Needle Engine, performance overhead).
-- [ ] **Explorer 3 (`explorer_r3_webar_frameworks`)**: Research non-Unity WebAR frameworks (Model-viewer, Three.js, MindAR, AR.js, 8th Wall, etc.) with detailed pros/cons/cost matrix.
+## Phase 2: Execution Track A (Documentation & Backend Architecture)
+- [ ] **Worker 1 (`worker_backend_arch`)**: Analyze ViMARA architecture, 3D file pipeline, auth, storage, hosting. Produce `Documentacion/Backend_Architecture_Report.md`.
+- [ ] **Worker 2 (`worker_doc_cleanup`)**: Review and summarize documents in `Documentacion/`, removing excessive verbosity while keeping key technical insights intact. Update `AIContext.md` and `CONTEXTO_IA.md`.
 
-## Phase 3: Synthesis & Verification
-- [ ] Synthesize findings into master Markdown report.
-- [ ] Ensure all 4 Acceptance Criteria are fully satisfied.
-- [ ] Verify zero-cost restriction compliance in final architectural recommendation.
+## Phase 3: Execution Track B (Mobile-First UI/UX Light Theme & 4-Step Navigation)
+- [ ] **Worker 3 (`worker_ui_ux`)**: Design and implement mobile-first Light Theme design system, CSS variables, touch targets, bottom sheets, mobile header/footer, and micro-interactions.
+- [ ] **Worker 4 (`worker_frontend_nav`)**: Install `react-router-dom`, refactor single page into 4-step multi-page flow matching `AppUIPresenter.cs` (MainMenu -> ModeSelection -> ModelImport -> ARVisualization).
 
-## Phase 4: Final Reporting & Handoff
-- [ ] Save final report to `c:\Users\manut\Documentos\UNIVERSIDAD\BENTRE25\ViMARA\AR_Foundation_vs_Vuforia_WebAR_Viability_Report.md`.
-- [ ] Notify Sentinel (parent) of completion.
+## Phase 4: Review, Testing & Verification
+- [ ] **Reviewer (`teamwork_preview_reviewer`)**: Test build (`npm run build`), lint (`npm run lint`), and verify multi-step navigation flow and mobile design.
+- [ ] **Forensic Auditor (`teamwork_preview_auditor`)**: Perform integrity audit on code and documentation deliverables.
+
+## Phase 5: Sentinel Notification & User Handoff
+- [ ] Synthesize all results, update `PROJECT.md` and `progress.md`.
+- [ ] Report final completion to parent/sentinel and summarize results for user.
