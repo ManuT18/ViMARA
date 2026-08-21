@@ -37,7 +37,7 @@ export default function MainMenu() {
         fontWeight: '500'
       }}>
         <Sparkles size={16} />
-        <span>Plataforma WebAR para Arquitectura y Diseño</span>
+        <span>Plataforma WebAR para Arquitectura</span>
       </div>
 
       {/* Main Title & Hero Tagline */}
@@ -49,7 +49,7 @@ export default function MainMenu() {
           letterSpacing: '-0.03em',
           marginBottom: '20px'
         }}>
-          Visualizador de Maquetas 3D en <br />
+          Visualizador de Maquetas de Arquitectura en <br />
           <span className="gradient-text">Realidad Aumentada</span>
         </h1>
 
@@ -127,7 +127,7 @@ export default function MainMenu() {
             Formatos 3D Estándar
           </h3>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-            Carga fácilmente maquetas en formatos <code>.glb</code>, <code>.gltf</code>, <code>.stl</code> y <code>.obj</code> desde SketchUp o Revit.
+            Carga fácilmente maquetas en formatos <code>.glb</code>, <code>.gltf</code>, <code>.stl</code> y <code>.obj</code>, exportando facilmente desde SketchUp o Revit.
           </p>
         </div>
 
@@ -149,7 +149,7 @@ export default function MainMenu() {
             Nativo en iOS y Android
           </h3>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-            Integración directa con Apple AR Quick Look y Google Scene Viewer para una experiencia inmersiva fluida.
+            Compatible con varios sistemas operativos móviles como Android e iOS. Utiliza librerías de AR como Apple AR Quick Look y Google Scene Viewer para una experiencia de Realidad Aumentada fluida.
           </p>
         </div>
       </div>
