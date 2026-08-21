@@ -1,113 +1,107 @@
-# Proyecto ViMARA: Evolución, Arquitectura y Tecnologías seleccionadas
+# Informe Técnico de Arquitectura y Decisiones de Diseño: Proyecto ViMARA
 
 **Proyecto:** ViMARA (Visualizador de Maquetas de Arquitectura en Realidad Aumentada)  
-**Marco:** Beca BENTRE25 / Departamento de Ciencias e Ingeniería de la Computación (DCIC)  
-**Fecha de Actualización:** Agosto 2026  
-**Estado:** Documento de Definición Final
+**Marco Institucional:** Beca BENTRE25 — Departamento de Ciencias e Ingeniería de la Computación (DCIC)  
+**Fecha:** Agosto de 2026  
+**Autor:** Manuel T.  
+**Estado:** Documento de Definición Técnica  
 
 ---
 
-## 1. Introducción y Objetivos del Proyecto
+## 1. Introducción y Contexto del Proyecto
 
-El proyecto **ViMARA** nace bajo el marco de la beca BENTRE25 con un objetivo fundamental: **democratizar la visualización de modelos 3D y maquetas arquitectónicas mediante Realidad Aumentada (AR)**.
+El proyecto ViMARA surge en el marco de la beca BENTRE25 con el propósito de facilitar la visualización e inspección espacial de maquetas arquitectónicas mediante tecnologías de Realidad Aumentada (AR). 
 
-El problema central identificado es que la presentación tradicional de maquetas (físicas o en pantallas 2D limitadas) restringe la comprensión espacial del diseño. Al mismo tiempo, las soluciones actuales de Realidad Aumentada en el mercado suelen requerir la instalación de aplicaciones nativas pesadas, creando una "barrera de fricción" alta para docentes, estudiantes y clientes finales.
+En la práctica arquitectónica y académica, la evaluación de proyectos suele depender de maquetas físicas (costosas y difíciles de transportar) o de representaciones en pantallas bidimensionales que limitan la comprensión de escala y proporciones. Si bien existen soluciones de Realidad Aumentada, la gran mayoría exige la instalación de aplicaciones nativas pesadas en las tiendas móviles, lo cual genera una fricción considerable para usuarios esporádicos, docentes o alumnos.
 
-Por lo tanto, el objetivo arquitectónico principal de ViMARA se definió como la creación de una plataforma **Zero-Friction**: una experiencia que se ejecute directamente desde el navegador web de cualquier teléfono inteligente, combinando fluidez estética con un motor de renderizado 3D robusto capaz de interpretar modelos arquitectónicos a escala real.
-
----
-
-## 2. Evaluación de Motores de Realidad Aumentada
-
-La búsqueda del motor de Realidad Aumentada adecuado requirió atravesar distintas etapas y evaluaciones tecnológicas:
-
-### 2.1. El Enfoque Nativo (Vuforia y AR Foundation)
-
-Inicialmente, el proyecto se concibió bajo el ecosistema tradicional de desarrollo de videojuegos usando el motor **Unity**. Se evaluaron las dos herramientas líderes:
-
-- **AR Foundation (ARCore para Android / ARKit para iOS):** Excelente rendimiento nativo y detección de planos (suelos y mesas). Sin embargo, exportar esto a la web es técnicamente inviable, forzando la creación de dos aplicaciones nativas (una para la App Store y otra para la Play Store).
-- **Vuforia:** Reconocido por su poderoso seguimiento de imágenes, ideal para apuntar el teléfono a un plano impreso y levantar la maqueta. El problema de Vuforia radica en sus altos costos de licenciamiento comercial y la restricción a aplicaciones instalables.
-
-**Conclusión de la Etapa 1:** Desarrollar una App Nativa limitaría el alcance de ViMARA. Se tomó la decisión estratégica de migrar hacia **WebAR** (Realidad Aumentada en el Navegador).
-
-### 2.2. Análisis de Viabilidad y Migración a WebApp
-
-La decisión de abandonar el empaquetado de aplicaciones nativas (iOS/Android) obligó a realizar un análisis profundo sobre la viabilidad de migrar toda la lógica del proyecto hacia una aplicación web (WebApp). En esta etapa se tomaron en consideración múltiples factores técnicos y de experiencia de usuario:
-
-- **Accesibilidad y Zero-Friction:** En el ámbito académico y profesional, obligar a un usuario (alumno, profesor o cliente) a descargar una aplicación de más de 100MB desde una tienda virtual solo para visualizar una maqueta genera una barrera de entrada muy alta. La migración a una WebApp garantiza un acceso instantáneo y universal mediante un simple enlace web o escaneando un código QR.
-- **Definición del Stack Tecnológico Frontend:** Para asegurar que la web no solo fuera funcional sino que tuviera un rendimiento sobresaliente, se decidió descartar tecnologías web antiguas. El análisis concluyó en la adopción de **React** como biblioteca principal para la construcción de la interfaz, orquestado mediante **Vite** para garantizar tiempos de carga y compilación ultrarrápidos.
-- **Librerías de Renderizado y Visualización:** Para el renderizado de gráficos tridimensionales en el navegador, se analizó y aprobó el uso de **Three.js** en combinación con el componente web **`<model-viewer>`** impulsado por Google. Esto permitía, en teoría, renderizar mallas complejas directamente en el DOM del navegador de forma eficiente.
-- **Complejidad de la Migración de Interfaz (UI):** Se determinó que reconstruir la interfaz gráfica (menús, botones, selectores) desde el sistema nativo "Canvas" de Unity hacia componentes web puros (HTML/CSS/JS) era un esfuerzo altamente justificado. La web ofrece un diseño adaptable (_responsive_) de forma natural. Esto permitió a ViMARA adoptar una estética limpia, ligera y visualmente muy superior a la que habitualmente se logra exportando interfaces gráficas directamente desde el motor de videojuegos.
-
-### 2.3. Análisis de Complejidad en WebAR y la Decisión por Zapworks
-
-Si bien el ecosistema web con React resolvía de manera excelente la interfaz de usuario, la navegación y la estética general, la implementación de la lógica de Realidad Aumentada pura dentro del navegador (WebAR) planteó un dilema fundamental durante la etapa de diseño técnico.
-
-Al realizar un análisis profundo de las herramientas de desarrollo web 3D (como Three.js en combinación con librerías de tracking), se descubrió que construir toda la lógica espacial, el manejo de cámaras, la interacción tridimensional y el pipeline de tracking directamente en código JavaScript puro resultaba sumamente complejo, demandante y propenso a alargar los tiempos de desarrollo de forma excesiva. Programar desde cero toda la matemática y comportamiento de AR sin el respaldo de un editor visual o un motor maduro convertía el proyecto en una tarea poco práctica para los plazos establecidos.
-
-Frente a esta dificultad técnica, y tras intercambios con los directores del proyecto, surgió la alternativa de **Zapworks** y su **Universal AR SDK**. Zapworks ofrecía el puente perfecto: permitía mantener toda la funcionalidad de Realidad Aumentada y el renderizado espacial dentro del entorno visual y amigable de **Unity** (aprovechando la lógica y experiencia previa en C#), al tiempo que facilitaba su exportación a WebGL optimizado para convivir con la interfaz moderna y fluida desarrollada en **React**. De esta manera, se logró un equilibrio ideal entre simplicidad de desarrollo y calidad visual para el usuario final.
+El objetivo central planteado para ViMARA fue diseñar una solución accesible directamente desde el navegador web (*WebAR*), eliminando el requisito de instalación previa y garantizando tiempos de respuesta adecuados en dispositivos móviles de gama media.
 
 ---
 
-## 3. Estandarización de Formatos de Archivos 3D
+## 2. Recorrido Tecnológico y Evaluación de Motores AR
 
-Dado que el flujo de trabajo de los usuarios proviene de software arquitectónico (como SketchUp, Revit o AutoCAD), se definió una política estricta de estandarización de formatos para garantizar que la WebApp no colapse por problemas de memoria gráfica:
+Durante las primeras etapas del proyecto, se evaluaron diferentes enfoques para el desarrollo de la experiencia de Realidad Aumentada:
 
-1. **`.glb` / `.gltf` (Formato Principal):** Designado como el formato oficial de ViMARA. Es un estándar binario diseñado específicamente para la web. Comprime mallas eficientemente y encapsula las texturas y materiales (PBR) en un único archivo ligero.
-2. **`.stl` (Geometría / Maqueta Blanca):** Un formato común en impresión 3D. Se soporta en ViMARA para cargar estudios volumétricos y maquetas conceptuales "en blanco", ya que contiene únicamente la geometría de la estructura, logrando tiempos de carga instantáneos.
-3. **`.obj` (Formato Tradicional):** Soportado como medida de retrocompatibilidad, aunque se desaconseja su uso frente al `.glb` debido a su naturaleza de texto plano (pesado de parsear) y el manejo fragmentado de materiales (archivos `.mtl`).
+### 2.1. Pruebas Iniciales en Entornos Nativos (Unity, AR Foundation y Vuforia)
+La primera aproximación se desarrolló sobre el motor **Unity**, explorando dos alternativas clásicas de la industria:
+- **AR Foundation (ARKit / ARCore):** Presenta un rendimiento óptimo en seguimiento de superficies planas (*Plane Tracking*), pero está restringido al empaquetado nativo para iOS y Android. No cuenta con soporte directo para despliegues web estándar.
+- **Vuforia Engine:** Resulta eficaz para el seguimiento basado en marcadores impresos (*Image Tracking*), ideal para superponer modelos sobre planos en papel. No obstante, además de exigir una aplicación instalable, su esquema de licenciamiento comercial impone barreras para un proyecto de desarrollo abierto o académico.
 
----
+Estas limitaciones confirmaron la necesidad de orientar la arquitectura hacia la web (*WebAR*), evitando forzar al usuario a descargar aplicaciones desde las tiendas de software.
 
-## 4. La Encrucijada Arquitectónica: Las Tres Alternativas
+### 2.2. Consideraciones de la Migración a WebApp (React y Three.js)
+El paso hacia el navegador implicó definir un stack tecnológico capaz de ofrecer una interfaz fluida:
+- **Interfaz de Usuario:** Se seleccionó **React** (v19) junto con **Vite** como entorno de construcción. Esto permitió reemplazar el sistema de interfaz gráfica de Unity (cuyos elementos *Canvas* resultan rígidos y pesados en la web) por componentes web nativos, adaptables a pantallas táctiles (*mobile-first*) y con tiempos de carga prácticamente instantáneos.
+- **Renderizado 3D en Navegador:** Se evaluó el uso de **Three.js** y el componente **`<model-viewer>`** de Google para gestionar la carga de modelos directamente sobre el DOM. 
 
-Al establecer que WebAR y Zapworks eran el camino a seguir, el equipo se enfrentó a un dilema de desarrollo y diseño sobre cómo construir la aplicación final. Se evaluaron tres alternativas reales:
+### 2.3. Dificultades de Implementación en WebAR Puro y Selección de Zapworks
+Al profundizar en el diseño técnico del visor, se observó que desarrollar toda la lógica espacial, la calibración de cámara y el anclaje de Realidad Aumentada únicamente con código JavaScript y librerías abiertas (como MindAR.js o Three.js puro) implicaba una complejidad matemática y de desarrollo excesiva. Implementar transformaciones de matrices, iluminación dinámica y manejo de mallas a mano aumentaba sensiblemente los tiempos de desarrollo y el riesgo de inestabilidad en el seguimiento.
 
-### Alternativa 1: 100% Unity (Web Build Tradicional)
-
-Consistía en desarrollar tanto la interfaz de usuario (menús, botones) como el visor 3D dentro del editor Unity y exportar todo como un único bloque WebGL.
-
-- **Ventaja:** Alta familiaridad para el desarrollador de videojuegos, uso del editor visual (drag-and-drop).
-- **Desventaja:** La interfaz de usuario (UI) creada en Unity WebGL suele sentirse pesada, lenta de cargar, no se adapta orgánicamente a pantallas móviles (responsive) y carece del estilo moderno y limpio de una aplicación web real.
-
-### Alternativa 2: 100% Desarrollo Web (React Puro)
-
-Consistía en abandonar Unity por completo y programar toda la aplicación (desde el diseño hasta el renderizado de gráficos 3D) en código JavaScript utilizando **React** y bibliotecas como **Three.js**.
-
-- **Ventaja:** Una aplicación extremadamente rápida, de estética "Premium" (mobile-first), con pesos de carga menores a 2 MB y latencia cero.
-- **Desventaja:** Requiere programar la lógica matemática del renderizado 3D y la iluminación a mano, perdiendo las facilidades visuales del entorno de Unity.
-
-### Alternativa 3: El Enfoque Híbrido (React + Unity Embebido)
-
-Esta alternativa plantea la separación de responsabilidades: usar **React** exclusivamente para construir la Interfaz de Usuario (la "Cáscara"), y utilizar **Unity WebGL** exclusivamente como el visor de Realidad Aumentada (el "Motor Interno").
+A partir de consultas con la dirección del proyecto, se evaluó la integración de **Zapworks** mediante su **Universal AR SDK**. Zapworks proporciona algoritmos de visión por computadora compilados a WebAssembly (Wasm), lo que permite ejecutar seguimiento de imágenes y de planos con alta precisión en el navegador. Principalmente, su SDK para Unity permite mantener la lógica de AR y el visor dentro del entorno de Unity (programando en C#), facilitando una exportación WebGL optimizada que puede integrarse en la web.
 
 ---
 
-## 5. La Solución Adoptada: El Enfoque Híbrido con Zapworks
+## 3. Manejo y Estandarización de Archivos 3D
 
-Tras sopesar la estética de la aplicación, el rendimiento en dispositivos móviles y el tiempo de desarrollo, **se determinó avanzar formalmente con la Alternativa 3 (El Enfoque Híbrido)**.
+Para asegurar que los modelos generados en software de diseño (como SketchUp, Revit, Rhino o Blender) puedan visualizarse sin degradar el rendimiento del navegador móvil, se definieron los siguientes formatos de soporte:
 
-### ¿Cómo funciona la arquitectura adoptada?
-
-1. **La "Cáscara" Premium (React + Vite):** Todo el flujo de navegación previo a la Realidad Aumentada (la Pantalla de Bienvenida, la Selección del Modo de Seguimiento y la Importación del Archivo 3D) fue desarrollado con React 19. Esto garantiza que el estudiante o cliente experimente una navegación fluida, diseño adaptable (mobile-first), temas claros modernos e interacciones instantáneas propias de una app de alto nivel.
-2. **El "Motor Interno" (Unity WebGL + Zapworks):** La lógica de renderizado del modelo 3D y la interacción espacial de Realidad Aumentada permanecen en **Unity**, aprovechando el SDK `Universal AR for Unity` de Zapworks. La exportación WebGL de este módulo está altamente optimizada gracias a las plantillas de compresión de Zappar.
-3. **Comunicación (El Puente):** Para integrar ambas partes, la WebApp de React utiliza una biblioteca puente (`react-unity-webgl`) que incrusta el motor de Unity en la página de visualización final. React toma los comandos del usuario (ej. "cargar archivo .glb") y se los transmite directamente al motor de Unity mediante comunicación bidireccional asíncrona, permitiendo que Unity renderice el entorno AR y el modelo arquitectónico seleccionado.
-
-### Beneficios del Enfoque Híbrido:
-
-- **Lo mejor de ambos mundos:** Se mantienen las ventajas visuales del ecosistema web moderno (React) sin perder el poder gráfico de un motor de videojuegos líder en la industria (Unity).
-- **Sin servidor (Serverless / MVP):** Toda esta arquitectura opera directamente en el navegador del dispositivo del usuario (Client-Side). Para esta primera fase MVP no es necesario un servidor Backend costoso. Los archivos 3D seleccionados se manejan localmente en la memoria, asegurando cero consumo de datos innecesario y total privacidad de los proyectos.
+1. **`.glb` / `.gltf` (Estándar Principal):** Es el formato de referencia para el proyecto. Almacena la geometría de la malla junto con texturas y materiales PBR en un único contenedor binario comprimido, minimizando el consumo de memoria en el teléfono.
+2. **`.stl` (Maquetas Volumétricas):** Formato estándar en impresión 3D. Contiene únicamente geometría sin información de color o textura, lo que permite cargas muy rápidas para el análisis de volumetrías o "maquetas blancas".
+3. **`.obj` (Compatibilidad Básica):** Se mantiene soporte básico por su amplia difusión, aunque se desaconseja para modelos de alta densidad debido a su mayor peso relativo y la fragmentación de sus archivos de materiales (`.mtl`).
 
 ---
 
-## 6. Conclusión y Próximos Pasos
+## 4. Comparativa de Alternativas Arquitectónicas
 
-La evolución de la arquitectura de **ViMARA** demuestra una maduración técnica enfocada estrictamente en el usuario final. Al descartar la obligatoriedad de instalar aplicaciones nativas y adoptar un entorno **WebAR Híbrido con Zapworks**, el proyecto se asegura de brindar una herramienta académica y profesional altamente accesible.
+Con los requerimientos y herramientas analizadas, se compararon tres caminos posibles para la estructura del sistema:
 
-El flujo de trabajo híbrido no solo facilita el proceso de programación gráfica mediante Unity, sino que preserva la estética, accesibilidad y rapidez de una aplicación web de vanguardia.
+| Alternativa | Descripción | Ventajas | Desventajas |
+| :--- | :--- | :--- | :--- |
+| **1. 100% Unity WebGL** | Toda la aplicación (menús, botones y visor AR) se construye en Unity y se exporta a WebGL. | Entorno de desarrollo unificado en C# y herramientas visuales integradas. | Interfaz poco responsive, estética poco adaptada a móviles y mayor peso inicial de descarga. |
+| **2. 100% Web (React + Three.js)** | Toda la interfaz y la lógica de renderizado AR se programan en JavaScript/React. | Carga extremadamente rápida, interfaz moderna y bajo consumo de recursos. | Alta complejidad para implementar la matemática de tracking y renderizado AR sin un motor dedicado. |
+| **3. Arquitectura Híbrida** | React gestiona el flujo de usuario y la interfaz; Unity WebGL (vía Zapworks) actúa como motor embebido para la escena AR. | Combina una interfaz web rápida y responsive con la robustez gráfica y facilidad de desarrollo de Unity. | Requiere configurar un puente de comunicación entre JavaScript y C#. |
 
-**Próximos Pasos:**
+---
 
-1. Desarrollar y perfeccionar la escena de Realidad Aumentada dentro de Unity integrando el SDK de Zapworks.
-2. Exportar el módulo WebGL optimizado desde Unity.
-3. Incrustar el módulo exportado dentro del ecosistema React actual (`vimara-3d.vercel.app`) y establecer los puentes de comunicación JavaScript-C# para la carga dinámica de las maquetas.
+## 5. Arquitectura Seleccionada: Enfoque Híbrido
+
+Se resolvió adoptar la **Alternativa 3 (Enfoque Híbrido)** como la solución que mejor equilibra calidad de experiencia de usuario y viabilidad de desarrollo.
+
+```
+[ Usuario en Dispositivo Móvil ]
+            │
+            ▼
+┌────────────────────────────────────────────────────────┐
+│  Capa de Interfaz y Navegación (React + Vite)          │
+│  - Pantalla Principal / Bienvenida                     │
+│  - Selector de Modo AR (Plano / Marcador)              │
+│  - Gestor de Archivos Locales (.glb, .stl, .obj)       │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+            [ react-unity-webgl Bridge ]
+                           │
+                           ▼
+┌────────────────────────────────────────────────────────┐
+│  Módulo de Visualización y AR (Unity WebGL + Zapworks) │
+│  - Renderizado de Escena 3D e Iluminación              │
+│  - Algoritmos de Visión y Tracking (Zapworks Wasm)     │
+│  - Manipulación espacial del modelo arquitectónico     │
+└────────────────────────────────────────────────────────┘
+```
+
+### Componentes del Sistema:
+1. **Frontend Web (React + Vite):** Se encarga de la navegación, la selección de modos de seguimiento y la carga de archivos. Al ejecutarse directamente sobre el DOM, garantiza una interfaz limpia, adaptable a distintas pantallas y con controles táctiles naturales.
+2. **Contenedor WebGL (Unity + Zapworks):** En la vista de visualización, se instancia el visor compilado de Unity. Este componente se activa únicamente cuando se inicia la experiencia AR, aprovechando la aceleración por hardware para renderizar el modelo y procesar el tracking de cámara provisto por Zapworks.
+3. **Comunicación Bidireccional:** La interoperabilidad se resuelve mediante `react-unity-webgl`, permitiendo que React envíe los datos del modelo cargado (o parámetros de configuración) hacia las funciones internas de Unity mediante llamadas asíncronas.
+4. **Operación Local (Client-Side):** Para esta etapa, la aplicación opera de forma completamente local en el navegador del dispositivo. No se requiere un backend para procesar o almacenar los modelos, lo que reduce costos de infraestructura a cero y preserva la privacidad de los proyectos de los estudiantes.
+
+---
+
+## 6. Conclusiones y Estado Actual
+
+La adopción de una arquitectura híbrida permite resolver los dos requisitos centrales de ViMARA: brindar un acceso inmediato y estéticamente cuidado desde la web, sin renunciar a la capacidad de procesamiento 3D y estabilidad de seguimiento que ofrece un motor como Unity con el soporte de Zapworks.
+
+**Estado y tareas inmediatas:**
+1. Concluir el diseño de la interfaz web en React con soporte responsive.
+2. Configurar la escena de tracking en Unity utilizando el paquete *Universal AR for Unity* de Zapworks.
+3. Integrar la compilación WebGL dentro de la aplicación React y validar el paso de parámetros y modelos 3D en dispositivos móviles reales sobre el despliegue en Vercel.
