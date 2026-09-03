@@ -23,11 +23,17 @@ dist-ssr
 *.sln
 *.sw?
 
-# Legacy Unity Caches
-Legacy_Unity/Library/
-Legacy_Unity/Logs/
-Legacy_Unity/UserSettings/
-Legacy_Unity/.utmp/
+# Unity Caches & Temporary folders
+[Ll]egacy_Unity/[Ll]ibrary/
+[Ll]egacy_Unity/[Ll]ogs/
+[Ll]egacy_Unity/[Uu]ser[Ss]ettings/
+[Ll]egacy_Unity/.utmp/
+[Ll]egacy_Unity/[Bb]uilds/
+unity_ar/[Ll]ibrary/
+unity_ar/[Ll]ogs/
+unity_ar/[Uu]ser[Ss]ettings/
+unity_ar/.utmp/
+unity_ar/[Bb]uilds/
 
 # Local tools
 graphify-out/
