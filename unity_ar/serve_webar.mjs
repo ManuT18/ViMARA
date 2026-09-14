@@ -112,25 +112,38 @@ const server = https.createServer({ key: pems.private, cert: pems.cert }, (req, 
     });
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-    const mobileUrl = `https://${localIP}:${PORT}`;
-    const localUrl = `https://localhost:${PORT}`;
+function startServer(port) {
+    server.listen(port, '0.0.0.0', () => {
+        const mobileUrl = `https://${localIP}:${port}`;
+        const localUrl = `https://localhost:${port}`;
 
-    console.clear();
-    console.log('\n======================================================');
-    console.log('🚀 SERVIDOR LOCAL HTTPS WEBAR INICIADO CON ÉXITO');
-    console.log('======================================================\n');
-    console.log(`💻 Local (en esta laptop):  ${localUrl}`);
-    console.log(`📱 Celular (en red Wi-Fi):   ${mobileUrl}\n`);
-    console.log('📲 Escaneá este código QR con tu celular:\n');
+        console.clear();
+        console.log('\n======================================================');
+        console.log('🚀 SERVIDOR LOCAL HTTPS WEBAR INICIADO CON ÉXITO');
+        console.log('======================================================\n');
+        console.log(`💻 Local (en esta laptop):  ${localUrl}`);
+        console.log(`📱 Celular (en red Wi-Fi):   ${mobileUrl}\n`);
+        console.log('📲 Escaneá este código QR con tu celular:\n');
 
-    qrcode.generate(mobileUrl, { small: true });
+        qrcode.generate(mobileUrl, { small: true });
 
-    console.log('\n======================================================');
-    console.log('⚠️  IMPORTANTE EN EL CELULAR:');
-    console.log('1. Conectá el celular a la misma red Wi-Fi que la laptop.');
-    console.log('2. Al abrir el enlace, el navegador avisará "La conexión no es privada".');
-    console.log('3. Tocá "Avanzado" -> "Continuar a ' + localIP + ' (no seguro)".');
-    console.log('4. Concedé permisos de CÁMARA y SENSORES (giroscopio).');
-    console.log('======================================================\n');
+        console.log('\n======================================================');
+        console.log('⚠️  IMPORTANTE EN EL CELULAR:');
+        console.log('1. Conectá el celular a la misma red Wi-Fi que la laptop.');
+        console.log('2. Al abrir el enlace, el navegador avisará "La conexión no es privada".');
+        console.log('3. Tocá "Avanzado" -> "Continuar a ' + localIP + ' (no seguro)".');
+        console.log('4. Concedé permisos de CÁMARA y SENSORES (giroscopio).');
+        console.log('======================================================\n');
+    });
+}
+
+server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.log(`⚠️  Puerto ${PORT} en uso, intentando con el puerto ${PORT + 1}...`);
+        startServer(PORT + 1);
+    } else {
+        console.error('Error en el servidor HTTPS:', err);
+    }
 });
+
+startServer(PORT);
