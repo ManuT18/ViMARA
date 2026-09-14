@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/useApp';
-import ModelViewer from '../components/ModelViewer';
+import UnityARViewer from '../components/UnityARViewer';
 import { ArrowLeft, LogOut, Target, Layers, Box, Info } from 'lucide-react';
 
 export default function ARVisualization() {
@@ -104,11 +104,7 @@ export default function ARVisualization() {
 
       {/* Main 3D / WebAR View Component */}
       <main style={{ width: '100%' }}>
-        <ModelViewer 
-          modelUrl={currentModel.url}
-          modelName={currentModel.name}
-          format={currentModel.format}
-        />
+        <UnityARViewer trackingMode={trackingMode} />
       </main>
 
       {/* Footer Info Badge */}
