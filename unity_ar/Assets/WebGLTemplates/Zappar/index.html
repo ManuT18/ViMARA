@@ -1,4 +1,4 @@
-<!-- Zappar WebGL template for Unity 2020 and above versions (Fixed Loader Timing) -->
+<!-- Zappar WebGL template for Unity 2020 and above versions (Fixed Loader Timing & Permissions) -->
 <!DOCTYPE html>
 <html lang="en-us">
 
@@ -133,6 +133,16 @@
             companyName: "{{{ COMPANY_NAME }}}",
             productName: "{{{ PRODUCT_NAME }}}",
             productVersion: "{{{ PRODUCT_VERSION }}}",
+        //Useful when used along with Filename as Hashes option
+        #if USE_DATA_CACHING
+            cacheControl: function (url) {
+            ZAPPAR_WEBGL_CACHING   
+            if (url.match(/\.mp4/) || url.match(/\.custom/) || url.match(/\.zbin/)) {
+                return "immutable";
+            }   
+            return "no-store";
+            },
+        #endif
         };
 
         const container = document.querySelector("#unity-container");
@@ -161,16 +171,21 @@
         };
         document.body.appendChild(script);
 
+        ZAPPAR_PERMISSIONS_IMPLEMENTATION
+
+        function WaitForZCVLoad() {
+            if (zappar.loaded()) {
+                CheckAndStart();
+                return;
+            }
+            setTimeout(WaitForZCVLoad, 250);
+        }
+
         function CheckAndStart() {
             if (zappar.loaded() && unityLoaderReady && typeof createUnityInstance === "function") {
                 CreateUnityLoader();
-            } else {
-                setTimeout(CheckAndStart, 250);
             }
         }
-
-        // Iniciar el chequeo
-        CheckAndStart();
 
         function CreateUnityLoader() {
             createUnityInstance(canvas, config, (progress) => {
