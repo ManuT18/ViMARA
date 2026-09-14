@@ -1,63 +1,18 @@
-import https from 'node:https';
+import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
-import selfsigned from 'selfsigned';
+import { startTunnel } from 'untun';
 import qrcode from 'qrcode-terminal';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PORT = 8443;
+const PORT = 8080;
 const BUILDS_DIR = path.join(__dirname, 'Builds');
 
-// 1. Obtener la IP local de la red LAN
-function getLocalIP() {
-    const interfaces = os.networkInterfaces();
-    for (const name of Object.keys(interfaces)) {
-        for (const iface of interfaces[name]) {
-            if (iface.family === 'IPv4' && !iface.internal && iface.address.startsWith('192.168.')) {
-                return iface.address;
-            }
-        }
-    }
-    for (const name of Object.keys(interfaces)) {
-        for (const iface of interfaces[name]) {
-            if (iface.family === 'IPv4' && !iface.internal) {
-                return iface.address;
-            }
-        }
-    }
-    return 'localhost';
-}
-
-const localIP = getLocalIP();
-
-// 2. Generar certificado SSL autofirmado
-console.log('🔒 Generando certificado SSL autofirmado para WebAR...');
-const attrs = [
-    { name: 'commonName', value: localIP },
-    { name: 'countryName', value: 'AR' },
-    { name: 'organizationName', value: 'ViMARA' },
-    { shortName: 'OU', value: 'AR Dev' }
-];
-
-const pems = selfsigned.generate(attrs, {
-    days: 30,
-    keySize: 2048,
-    extensions: [
-        {
-            name: 'subjectAltName',
-            altNames: [
-                { type: 2, value: 'localhost' },
-                { type: 7, ip: localIP },
-                { type: 7, ip: '127.0.0.1' }
-            ]
-        }
-    ]
-});
-
+// MIME types para Unity WebGL
 const mimeTypes = {
     '.html': 'text/html',
     '.js': 'application/javascript',
@@ -73,14 +28,14 @@ const mimeTypes = {
     '.zbin': 'application/octet-stream'
 };
 
-// 3. Crear servidor HTTPS con soporte de compresión Unity WebGL
-const server = https.createServer({ key: pems.private, cert: pems.cert }, (req, res) => {
+// 1. Crear servidor HTTP local
+const server = http.createServer((req, res) => {
     let reqPath = req.url.split('?')[0];
     if (reqPath === '/' || reqPath === '') reqPath = '/index.html';
 
     const filePath = path.join(BUILDS_DIR, decodeURIComponent(reqPath));
 
-    // Headers CORS y Cache para WebAR
+    // Headers CORS y aislamiento para WebAR
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
     res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
@@ -112,38 +67,44 @@ const server = https.createServer({ key: pems.private, cert: pems.cert }, (req, 
     });
 });
 
-function startServer(port) {
-    server.listen(port, '0.0.0.0', () => {
-        const mobileUrl = `https://${localIP}:${port}`;
-        const localUrl = `https://localhost:${port}`;
-
+function start(port) {
+    server.listen(port, '0.0.0.0', async () => {
         console.clear();
         console.log('\n======================================================');
-        console.log('🚀 SERVIDOR LOCAL HTTPS WEBAR INICIADO CON ÉXITO');
+        console.log('🚀 INICIANDO TUNEL HTTPS SEGURO PARA IPHONE / ANDROID...');
         console.log('======================================================\n');
-        console.log(`💻 Local (en esta laptop):  ${localUrl}`);
-        console.log(`📱 Celular (en red Wi-Fi):   ${mobileUrl}\n`);
-        console.log('📲 Escaneá este código QR con tu celular:\n');
 
-        qrcode.generate(mobileUrl, { small: true });
+        try {
+            const tunnel = await startTunnel({ port });
+            const tunnelUrl = await tunnel.getURL();
 
-        console.log('\n======================================================');
-        console.log('⚠️  IMPORTANTE EN EL CELULAR:');
-        console.log('1. Conectá el celular a la misma red Wi-Fi que la laptop.');
-        console.log('2. Al abrir el enlace, el navegador avisará "La conexión no es privada".');
-        console.log('3. Tocá "Avanzado" -> "Continuar a ' + localIP + ' (no seguro)".');
-        console.log('4. Concedé permisos de CÁMARA y SENSORES (giroscopio).');
-        console.log('======================================================\n');
+            console.clear();
+            console.log('\n======================================================');
+            console.log('✨ SERVIDOR WEBAR EN VIVO CON HTTPS VÁLIDO (CLOUDFLARE)');
+            console.log('======================================================\n');
+            console.log(`💻 Local (Laptop):      http://localhost:${port}`);
+            console.log(`📱 iPhone / Android:    ${tunnelUrl}\n`);
+            console.log('📲 Escaneá este código QR con la cámara de tu iPhone:\n');
+
+            qrcode.generate(tunnelUrl, { small: true });
+
+            console.log('\n======================================================');
+            console.log('✅ Safari / Chrome abrirán la página de inmediato.');
+            console.log('✅ Al pedir permisos, aceptá CÁMARA y GIROSCOPIO.');
+            console.log('======================================================\n');
+        } catch (tunnelError) {
+            console.error('No se pudo iniciar el túnel automático:', tunnelError.message);
+            console.log(`Podés acceder localmente en http://localhost:${port}`);
+        }
     });
 }
 
 server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
-        console.log(`⚠️  Puerto ${PORT} en uso, intentando con el puerto ${PORT + 1}...`);
-        startServer(PORT + 1);
+        start(PORT + 1);
     } else {
-        console.error('Error en el servidor HTTPS:', err);
+        console.error('Error en el servidor:', err);
     }
 });
 
-startServer(PORT);
+start(PORT);
