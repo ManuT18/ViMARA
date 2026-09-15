@@ -60,30 +60,20 @@ export default function ModeSelection() {
       </div>
 
       {/* Mode Selection Cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
-        gap: '24px'
-      }}>
+      <div className="mode-cards-container">
         {/* Option 1: Seguimiento por Marcador */}
         <div
           onClick={() => handleSelectMode('marker')}
-          className="glass-card"
+          className="glass-card mode-card"
           style={{
-            padding: '32px 24px',
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            position: 'relative',
             border: trackingMode === 'marker' ? '2px solid var(--accent-primary)' : '1px solid var(--border-glass)',
             background: trackingMode === 'marker' ? 'rgba(59, 130, 246, 0.12)' : 'rgba(255, 255, 255, 0.03)'
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{
-              width: '52px',
-              height: '52px',
+              width: '48px',
+              height: '48px',
               borderRadius: '14px',
               background: 'rgba(59, 130, 246, 0.2)',
               display: 'flex',
@@ -91,7 +81,7 @@ export default function ModeSelection() {
               justifyContent: 'center',
               color: 'var(--accent-primary)'
             }}>
-              <Target size={28} />
+              <Target size={26} />
             </div>
 
             {trackingMode === 'marker' && (
@@ -102,11 +92,11 @@ export default function ModeSelection() {
           </div>
 
           <div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '8px' }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '8px' }}>
               Seguimiento por Marcador
             </h3>
             <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              Proyecta la maqueta anclada sobre un plano impreso, imagen 2D o código QR de referencia<br />Ideal para presentaciones de planos
+              Proyecta el modelo anclado sobre un plano impreso, imagen 2D o código QR<br />Ideal para presentaciones de planos
             </p>
           </div>
 
@@ -119,22 +109,16 @@ export default function ModeSelection() {
         {/* Option 2: Seguimiento por Plano */}
         <div
           onClick={() => handleSelectMode('plane')}
-          className="glass-card"
+          className="glass-card mode-card"
           style={{
-            padding: '32px 24px',
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            position: 'relative',
             border: trackingMode === 'plane' ? '2px solid #8b5cf6' : '1px solid var(--border-glass)',
             background: trackingMode === 'plane' ? 'rgba(139, 92, 246, 0.12)' : 'rgba(255, 255, 255, 0.03)'
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{
-              width: '52px',
-              height: '52px',
+              width: '48px',
+              height: '48px',
               borderRadius: '14px',
               background: 'rgba(139, 92, 246, 0.2)',
               display: 'flex',
@@ -142,7 +126,7 @@ export default function ModeSelection() {
               justifyContent: 'center',
               color: '#a855f7'
             }}>
-              <Layers size={28} />
+              <Layers size={26} />
             </div>
 
             {trackingMode === 'plane' && (
@@ -153,11 +137,11 @@ export default function ModeSelection() {
           </div>
 
           <div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '8px' }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '8px' }}>
               Seguimiento por Plano
             </h3>
             <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              Detecta automáticamente superficies planas y coloca la maqueta 3D sin necesidad de marcador<br />Ideal para entornos amplios
+              Detecta automáticamente superficies planas y coloca el modelo 3D sin marcador<br />Ideal para entornos amplios
             </p>
           </div>
 

@@ -509,3 +509,48 @@ button, input, select, textarea, a, .touch-target {
   }
 }
 
+/* Mode Selection Horizontal Scroll Carousel */
+.mode-cards-container {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  width: 100%;
+}
+
+.mode-card {
+  padding: 28px 22px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  border-radius: var(--radius-lg);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (max-width: 768px) {
+  .mode-cards-container {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    gap: 14px;
+    padding: 6px 16px 14px 16px;
+    margin-left: -16px;
+    margin-right: -16px;
+    scrollbar-width: none;
+  }
+
+  .mode-cards-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mode-card {
+    flex: 0 0 84%;
+    max-width: 320px;
+    scroll-snap-align: center;
+    padding: 22px 18px;
+  }
+}
+
+
