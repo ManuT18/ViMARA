@@ -1,5 +1,5 @@
-import React from 'react';
-import { Building2, CheckCircle2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Building2, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 
 const SAMPLES = [
   {
@@ -26,17 +26,30 @@ const SAMPLES = [
 ];
 
 export default function SampleSelector({ onSelectSample, activeSampleId }) {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
     <div className="glass-panel" style={{ padding: '20px' }}>
-      <h3 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '4px', color: 'var(--text-primary)' }}>
-        Maquetas de Prueba Instantáneas
-      </h3>
-      <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '14px', lineHeight: 1.4 }}>
-        Toca cualquier ejemplo para probar la Realidad Aumentada sin subir un archivo:
-      </p>
+      <div 
+        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <div>
+          <h3 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '4px', color: 'var(--text-primary)' }}>
+            Modelos de Prueba Instantáneos
+          </h3>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.4, margin: 0 }}>
+            Toca aquí para probar ejemplos sin subir un archivo
+          </p>
+        </div>
+        <div style={{ color: 'var(--text-secondary)' }}>
+          {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+        </div>
+      </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {SAMPLES.map((sample) => {
+      {isOpen && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '16px' }}>
+          {SAMPLES.map((sample) => {
           const isActive = activeSampleId === sample.id;
           return (
             <div
@@ -90,7 +103,8 @@ export default function SampleSelector({ onSelectSample, activeSampleId }) {
             </div>
           );
         })}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
