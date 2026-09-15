@@ -59,21 +59,21 @@ export default function UnityARViewer({ trackingMode = 'surface' }) {
         background: isFullscreen ? 'rgba(0,0,0,0.6)' : 'transparent',
         backdropFilter: isFullscreen ? 'blur(8px)' : 'none'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Camera size={18} color="var(--accent-primary, #3b82f6)" />
-          <span style={{ fontSize: '0.9rem', fontWeight: '600', color: '#fff' }}>
-            Visor WebAR (Unity) · Modo {trackingMode === 'marker' ? 'Marcador' : 'Plano'}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+          <Camera size={18} color="var(--accent-primary, #3b82f6)" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            Visor WebAR · Modo {trackingMode === 'marker' ? 'Marcador' : 'Plano'}
           </span>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
           <button 
             className="btn-secondary" 
             onClick={reloadViewer}
             title="Reiniciar cámara y visor"
-            style={{ padding: '6px 12px', fontSize: '0.82rem', height: '36px' }}
+            style={{ padding: '6px 10px', fontSize: '0.8rem', height: '34px', minHeight: '34px' }}
           >
-            <RotateCcw size={15} />
+            <RotateCcw size={14} />
             <span>Reiniciar</span>
           </button>
 
@@ -81,10 +81,10 @@ export default function UnityARViewer({ trackingMode = 'surface' }) {
             className="btn-primary" 
             onClick={toggleFullscreen}
             title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
-            style={{ padding: '6px 14px', fontSize: '0.82rem', height: '36px' }}
+            style={{ padding: '6px 10px', fontSize: '0.8rem', height: '34px', minHeight: '34px' }}
           >
-            {isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
-            <span>{isFullscreen ? 'Salir' : 'Pantalla Completa'}</span>
+            {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            <span>{isFullscreen ? 'Salir' : 'Maximizar'}</span>
           </button>
         </div>
       </div>

@@ -67,38 +67,28 @@ export default function ARVisualization() {
       }}
     >
       {/* Top Header & Navigation Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <button className="btn-secondary" onClick={handleBackToImport}>
-            <ArrowLeft size={18} />
-            <span>Volver a Importar Modelo</span>
+      <div className="page-top-bar">
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button className="page-back-btn" onClick={handleBackToImport}>
+            <ArrowLeft size={16} />
+            <span>Volver a Modelo</span>
           </button>
 
           {/* Model Info Badge */}
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '6px 14px',
-            borderRadius: '20px',
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid var(--border-glass)',
-            fontSize: '0.85rem',
-            color: 'var(--text-primary)'
-          }}>
-            {trackingMode === 'marker' ? <Target size={15} color="#60a5fa" /> : <Layers size={15} color="#c084fc" />}
-            <span>Modo: <strong>{modeLabel}</strong></span>
+          <div className={`page-mode-badge ${trackingMode === 'marker' ? 'marker' : 'plane'}`}>
+            {trackingMode === 'marker' ? <Target size={14} /> : <Layers size={14} />}
+            <span>Modo: <strong>{trackingMode === 'marker' ? 'Marcador' : 'Plano'}</strong></span>
           </div>
         </div>
 
         {/* Exit Button */}
         <button 
-          className="btn-secondary" 
+          className="page-back-btn" 
           onClick={handleExitApp}
-          style={{ borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
+          style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#ef4444' }}
         >
-          <LogOut size={18} />
-          <span>Salir de la App</span>
+          <LogOut size={16} />
+          <span>Salir</span>
         </button>
       </div>
 
