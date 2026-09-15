@@ -37,17 +37,7 @@ export default function ModelImport() {
     : 'Seguimiento por Plano';
 
   return (
-    <div
-      className="animate-fade-in"
-      style={{
-        maxWidth: '1200px',
-        margin: '0 auto',
-        padding: '32px 24px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '28px'
-      }}
-    >
+    <div className="model-import-page animate-fade-in">
       {/* Top Header & Navigation */}
       <div className="page-top-bar">
         <button className="page-back-btn" onClick={handleBackToMode}>
@@ -73,12 +63,7 @@ export default function ModelImport() {
       </div>
 
       {/* Content Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
-        gap: '24px',
-        alignItems: 'start'
-      }}>
+      <div className="model-import-grid">
         {/* Left Column: FileUploader & Format Recommendations */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <FileUploader

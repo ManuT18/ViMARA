@@ -55,17 +55,7 @@ export default function ARVisualization() {
   }
 
   return (
-    <div
-      className="animate-fade-in"
-      style={{
-        maxWidth: '1280px',
-        margin: '0 auto',
-        padding: '24px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '20px'
-      }}
-    >
+    <div className="ar-visualization-page animate-fade-in">
       {/* Top Header & Navigation Bar */}
       <div className="page-top-bar">
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>

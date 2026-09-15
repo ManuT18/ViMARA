@@ -13,7 +13,7 @@ export default function App() {
   return (
     <AppProvider>
       <ScrollToTop />
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '100vw', overflowX: 'hidden' }}>
         <Navbar />
 
         <Routes>
