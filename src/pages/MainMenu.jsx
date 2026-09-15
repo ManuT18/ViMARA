@@ -10,19 +10,7 @@ export default function MainMenu() {
   };
 
   return (
-    <div 
-      className="animate-fade-in"
-      style={{
-        maxWidth: '1100px',
-        margin: '0 auto',
-        padding: '40px 24px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '40px',
-        textAlign: 'center'
-      }}
-    >
+    <div className="main-menu-page animate-fade-in">
 
       {/* Main Title & Hero Tagline */}
       <div style={{ maxWidth: '850px' }}>
@@ -47,7 +35,7 @@ export default function MainMenu() {
         </p>
       </div>
 
-      {/* Action Button: "Entrar a la App" */}
+      {/* Action Button: "Iniciar App" */}
       <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
         <button 
           className="btn-primary" 
@@ -65,7 +53,7 @@ export default function MainMenu() {
 
       {/* Value Proposition Cards */}
       <div className="main-features-grid">
-        <div className="glass-panel" style={{ padding: '28px', textAlign: 'left' }}>
+        <div className="main-feature-card">
           <div style={{
             width: '48px',
             height: '48px',
@@ -87,7 +75,7 @@ export default function MainMenu() {
           </p>
         </div>
 
-        <div className="glass-panel" style={{ padding: '28px', textAlign: 'left' }}>
+        <div className="main-feature-card">
           <div style={{
             width: '48px',
             height: '48px',
@@ -109,7 +97,7 @@ export default function MainMenu() {
           </p>
         </div>
 
-        <div className="glass-panel" style={{ padding: '28px', textAlign: 'left' }}>
+        <div className="main-feature-card">
           <div style={{
             width: '48px',
             height: '48px',
