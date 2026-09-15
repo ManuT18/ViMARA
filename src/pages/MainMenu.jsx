@@ -64,13 +64,7 @@ export default function MainMenu() {
       </div>
 
       {/* Value Proposition Cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-        gap: '24px',
-        width: '100%',
-        marginTop: '20px'
-      }}>
+      <div className="main-features-grid">
         <div className="glass-panel" style={{ padding: '28px', textAlign: 'left' }}>
           <div style={{
             width: '48px',

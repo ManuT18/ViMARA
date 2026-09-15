@@ -415,3 +415,20 @@ button, input, select, textarea, a, .touch-target {
     display: none;
   }
 }
+
+/* Main Menu Features Grid - 3 columnas en PC, 1 columna en móvil/tablet */
+.main-features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  width: 100%;
+  margin-top: 20px;
+}
+
+@media (max-width: 960px) {
+  .main-features-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
