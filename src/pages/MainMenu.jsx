@@ -14,23 +14,12 @@ export default function MainMenu() {
 
       {/* Main Title & Hero Tagline */}
       <div style={{ maxWidth: '850px' }}>
-        <h1 style={{
-          fontSize: '3.2rem',
-          fontWeight: '800',
-          lineHeight: 1.15,
-          letterSpacing: '-0.03em',
-          marginBottom: '20px'
-        }}>
+        <h1 className="hero-title">
           Visualizador de Maquetas de Arquitectura en <br />
           <span className="gradient-text">Realidad Aumentada</span>
         </h1>
 
-        <p style={{
-          fontSize: '1.18rem',
-          color: 'var(--text-secondary)',
-          lineHeight: 1.6,
-          fontWeight: '400'
-        }}>
+        <p className="hero-tagline">
           Proyecta modelos tridimensionales arquitectónicos a escala real directamente desde tu navegador web
         </p>
       </div>

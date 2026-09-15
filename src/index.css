@@ -428,6 +428,21 @@ button, input, select, textarea, a, .touch-target {
   text-align: center;
 }
 
+.hero-title {
+  font-size: 3.2rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  margin-bottom: 20px;
+}
+
+.hero-tagline {
+  font-size: 1.18rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  font-weight: 400;
+}
+
 .main-features-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -452,6 +467,17 @@ button, input, select, textarea, a, .touch-target {
   .main-menu-page {
     padding: 24px 16px;
     gap: 28px;
+  }
+
+  .hero-title {
+    font-size: 1.95rem;
+    line-height: 1.2;
+    margin-bottom: 14px;
+  }
+
+  .hero-tagline {
+    font-size: 0.95rem;
+    line-height: 1.5;
   }
 
   .main-features-grid {
