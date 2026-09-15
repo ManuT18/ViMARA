@@ -39,9 +39,6 @@ export default function Navbar() {
           <h1 className="navbar-title">
             ViMARA
           </h1>
-          <p className="navbar-subtitle">
-            Visualizador de Maquetas de Arquitectura en Realidad Aumentada
-          </p>
         </div>
       </div>
 

@@ -58,7 +58,7 @@ export default function MainMenu() {
             borderRadius: '14px'
           }}
         >
-          <span>Entrar a la App</span>
+          <span>Iniciar App</span>
           <ArrowRight size={22} />
         </button>
       </div>
