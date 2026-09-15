@@ -119,6 +119,72 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &99963333
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 99963335}
+  - component: {fileID: 99963334}
+  - component: {fileID: 99963336}
+  m_Layer: 0
+  m_Name: Zappar Instant Tracking Target
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &99963334
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 99963333}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a7c067e774884e3fb23c00a74bd6040, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Zappar.UAR::Zappar.ZapparInstantTrackingTarget
+  m_anchorOffsetFromCamera: {x: 0, y: 0, z: -3}
+  m_placeOnTouch: 1
+  MoveAnchorOnZ: 0
+  m_zCamera: {fileID: 0}
+  m_minZDistance: 3
+  m_maxZDistance: 40
+--- !u!4 &99963335
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 99963333}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 359664345}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &99963336
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 99963333}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05ce7569bd038e54ba3de0b4c9b5e57b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: NewAssembly::ViMARA.AR.InstantTrackingController
+  AllowMouseClick: 1
+  ResetKey: 32
 --- !u!850595691 &131171770
 LightingSettings:
   m_ObjectHideFlags: 0
@@ -291,13 +357,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 359664341}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.15598659, y: -0.3801205, z: 0.065204196, w: 0.9093542}
-  m_LocalPosition: {x: 0.13, y: 0, z: 2.66}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: -13.54, y: -47.056, z: 14.12}
+  m_Father: {fileID: 99963335}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &889971773
 GameObject:
   m_ObjectHideFlags: 0
@@ -515,7 +581,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 37677d5322c344b439d86a6630bd7a6a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Zappar.UAR::Zappar.ZapparCamera
-  AnchorOrigin: {fileID: 0}
+  AnchorOrigin: {fileID: 99963334}
   UseFrontFacingCamera: 0
   CameraAttitudeFromGyro: 0
   MirrorCamera: 0
@@ -690,4 +756,4 @@ SceneRoots:
   m_Roots:
   - {fileID: 1890904098}
   - {fileID: 1215035212}
-  - {fileID: 359664345}
+  - {fileID: 99963335}
