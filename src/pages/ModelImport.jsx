@@ -70,9 +70,6 @@ export default function ModelImport() {
         <h2 style={{ fontSize: '2rem', fontWeight: '700', marginTop: '4px' }}>
           Importar o Seleccionar Modelo 3D
         </h2>
-        <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginTop: '8px' }}>
-          Sube tu propio archivo 3D o selecciona un modelo predefinido para comenzar.
-        </p>
       </div>
 
       {/* Content Grid */}

@@ -106,7 +106,7 @@ export default function ModeSelection() {
               Seguimiento por Marcador
             </h3>
             <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              Proyecta la maqueta anclada sobre un plano impreso, imagen 2D o código QR de referencia. Ideal para presentaciones de planos.
+              Proyecta la maqueta anclada sobre un plano impreso, imagen 2D o código QR de referencia<br />Ideal para presentaciones de planos
             </p>
           </div>
 
@@ -157,7 +157,7 @@ export default function ModeSelection() {
               Seguimiento por Plano
             </h3>
             <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              Detecta automáticamente superficies planas (suelos o mesas) y coloca la maqueta 3D en escala realista sin necesidad de marcador.
+              Detecta automáticamente superficies planas y coloca la maqueta 3D sin necesidad de marcador<br />Ideal para entornos amplios
             </p>
           </div>
 

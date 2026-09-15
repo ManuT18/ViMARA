@@ -38,9 +38,6 @@ export default function SampleSelector({ onSelectSample, activeSampleId }) {
           <h3 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '4px', color: 'var(--text-primary)' }}>
             Modelos de Prueba Instantáneos
           </h3>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.4, margin: 0 }}>
-            Toca aquí para probar ejemplos sin subir un archivo
-          </p>
         </div>
         <div style={{ color: 'var(--text-secondary)' }}>
           {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
