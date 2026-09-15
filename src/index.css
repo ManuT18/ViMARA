@@ -432,3 +432,80 @@ button, input, select, textarea, a, .touch-target {
   }
 }
 
+/* Page Sub-header & Action Buttons (Compact & Subtle) */
+.page-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.page-back-btn {
+  font-size: 0.82rem;
+  padding: 6px 12px;
+  min-height: 34px;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.page-back-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--accent-primary);
+  border-color: #cbd5e1;
+}
+
+.page-back-btn:active {
+  transform: scale(0.96);
+}
+
+.page-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.page-mode-badge.marker {
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  color: var(--accent-primary);
+}
+
+.page-mode-badge.plane {
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  color: #7c3aed;
+}
+
+@media (max-width: 640px) {
+  .page-top-bar {
+    gap: 8px;
+  }
+  
+  .page-back-btn {
+    font-size: 0.78rem;
+    padding: 5px 10px;
+    min-height: 30px;
+  }
+  
+  .page-mode-badge {
+    font-size: 0.74rem;
+    padding: 4px 10px;
+  }
+}
+

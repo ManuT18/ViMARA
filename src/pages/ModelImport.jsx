@@ -49,27 +49,16 @@ export default function ModelImport() {
       }}
     >
       {/* Top Header & Navigation */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button className="btn-secondary" onClick={handleBackToMode}>
-          <ArrowLeft size={18} />
-          <span>Volver a Selección de Modo</span>
+      <div className="page-top-bar">
+        <button className="page-back-btn" onClick={handleBackToMode}>
+          <ArrowLeft size={16} />
+          <span>Volver a Modo</span>
         </button>
 
         {/* Selected Mode Tag */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '6px 16px',
-          borderRadius: '20px',
-          background: trackingMode === 'marker' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(139, 92, 246, 0.15)',
-          border: `1px solid ${trackingMode === 'marker' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(139, 92, 246, 0.3)'}`,
-          color: trackingMode === 'marker' ? '#60a5fa' : '#c084fc',
-          fontSize: '0.88rem',
-          fontWeight: '500'
-        }}>
-          {trackingMode === 'marker' ? <Target size={16} /> : <Layers size={16} />}
-          <span>Modo Activo: <strong>{modeLabel}</strong></span>
+        <div className={`page-mode-badge ${trackingMode === 'marker' ? 'marker' : 'plane'}`}>
+          {trackingMode === 'marker' ? <Target size={14} /> : <Layers size={14} />}
+          <span>Modo: <strong>{trackingMode === 'marker' ? 'Marcador' : 'Plano'}</strong></span>
         </div>
       </div>
 
@@ -79,10 +68,10 @@ export default function ModelImport() {
           Paso 2 de 3 · Selección de Modelo 3D
         </span>
         <h2 style={{ fontSize: '2rem', fontWeight: '700', marginTop: '4px' }}>
-          Importar o Seleccionar Maqueta 3D
+          Importar o Seleccionar Modelo 3D
         </h2>
         <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginTop: '8px' }}>
-          Sube tu propia maqueta o selecciona un ejemplo predefinido para comenzar.
+          Sube tu propio archivo 3D o selecciona un modelo predefinido para comenzar.
         </p>
       </div>
 
@@ -154,7 +143,7 @@ export default function ModelImport() {
               <div className="glass-card" style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '12px', borderColor: 'rgba(234, 179, 8, 0.4)' }}>
                 <AlertCircle size={24} color="#facc15" />
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  Aún no se ha seleccionado ninguna maqueta 3D. Elige un ejemplo o sube un archivo.
+                  Aún no se ha seleccionado ningún modelo 3D. Elige un ejemplo o sube un archivo.
                 </p>
               </div>
             )}

@@ -24,7 +24,7 @@ export default function FileUploader({ onFileSelect, activeFileName }) {
   return (
     <div className="glass-panel" style={{ padding: '20px' }}>
       <h3 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '10px', color: 'var(--text-primary)' }}>
-        Cargar Maqueta desde tu Dispositivo
+        Cargar Modelo desde tu Dispositivo
       </h3>
       
       <div 

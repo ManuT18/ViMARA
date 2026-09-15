@@ -31,17 +31,17 @@ export default function ModeSelection() {
       }}
     >
       {/* Top Header & Navigation */}
-      <div className="mode-selection-header">
-        <button className="btn-secondary nav-action-btn" onClick={handleBackToMenu}>
-          <ArrowLeft size={18} />
+      <div className="page-top-bar">
+        <button className="page-back-btn" onClick={handleBackToMenu}>
+          <ArrowLeft size={16} />
           <span>Volver al Menú</span>
         </button>
 
         <button 
-          className="btn-secondary nav-action-btn help-btn" 
+          className="page-back-btn help-btn" 
           onClick={() => setIsInfoModalOpen(true)}
         >
-          <Info size={18} />
+          <Info size={16} />
           <span>¿Necesitás Ayuda?</span>
         </button>
       </div>
