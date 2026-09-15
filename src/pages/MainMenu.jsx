@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Box, Smartphone, Layers, Sparkles } from 'lucide-react';
+import { ArrowRight, Globe, Layers, Building2 } from 'lucide-react';
 
 export default function MainMenu() {
   const navigate = useNavigate();
@@ -23,22 +23,6 @@ export default function MainMenu() {
         textAlign: 'center'
       }}
     >
-      {/* Hero Badge */}
-      <div style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '8px 18px',
-        borderRadius: '30px',
-        background: 'rgba(59, 130, 246, 0.12)',
-        border: '1px solid rgba(59, 130, 246, 0.3)',
-        color: '#60a5fa',
-        fontSize: '0.88rem',
-        fontWeight: '500'
-      }}>
-        <Sparkles size={16} />
-        <span>Plataforma WebAR para Arquitectura</span>
-      </div>
 
       {/* Main Title & Hero Tagline */}
       <div style={{ maxWidth: '850px' }}>
@@ -59,7 +43,7 @@ export default function MainMenu() {
           lineHeight: 1.6,
           fontWeight: '400'
         }}>
-          Proyecta modelos tridimensionales arquitectónicos a escala real directamente desde tu navegador web. Sin instalaciones pesadas ni plugins externos.
+          Proyecta modelos tridimensionales arquitectónicos a escala real directamente desde tu navegador web
         </p>
       </div>
 
@@ -99,13 +83,13 @@ export default function MainMenu() {
             color: 'var(--accent-primary)',
             marginBottom: '16px'
           }}>
-            <Layers size={24} />
+            <Globe size={24} />
           </div>
           <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '8px' }}>
-            Dos Modos de AR
+            WebAR Sin Instalaciones
           </h3>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-            Soporta seguimiento por marcador para planos físicos y detección de planos horizontales (suelo/mesas).
+            Visualización inmersiva directa en el navegador (Safari / Chrome) sin requerir descargas ni instalación de apps externas.
           </p>
         </div>
 
@@ -121,13 +105,13 @@ export default function MainMenu() {
             color: '#a855f7',
             marginBottom: '16px'
           }}>
-            <Box size={24} />
+            <Layers size={24} />
           </div>
           <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '8px' }}>
-            Formatos 3D Estándar
+            Seguimiento Instantáneo
           </h3>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-            Carga fácilmente maquetas en formatos <code>.glb</code>, <code>.gltf</code>, <code>.stl</code> y <code>.obj</code>, exportando facilmente desde SketchUp o Revit.
+            Algoritmos de visión computacional para fijar maquetas tridimensionales en superficies reales con alta estabilidad.
           </p>
         </div>
 
@@ -143,13 +127,13 @@ export default function MainMenu() {
             color: '#ec4899',
             marginBottom: '16px'
           }}>
-            <Smartphone size={24} />
+            <Building2 size={24} />
           </div>
           <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '8px' }}>
-            Nativo en iOS y Android
+            Formatos 3D estandar
           </h3>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-            Compatible con varios sistemas operativos móviles como Android e iOS. Utiliza librerías de AR como Apple AR Quick Look y Google Scene Viewer para una experiencia de Realidad Aumentada fluida.
+            Preparado para inspeccionar volumetrías, proporciones espaciales y modelos exportados desde Revit, SketchUp, Rhino o Blender.
           </p>
         </div>
       </div>
