@@ -341,14 +341,7 @@ button, input, select, textarea, a, .touch-target {
   color: var(--text-primary);
 }
 
-.navbar-subtitle {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 380px;
-}
+
 
 .navbar-steps {
   display: flex;
@@ -394,13 +387,17 @@ button, input, select, textarea, a, .touch-target {
 /* Mobile Adjustments for Header & Navbar */
 @media (max-width: 640px) {
   .navbar-container {
-    margin: 8px 10px 0 10px;
-    padding: 8px 12px;
+    margin: 0;
+    padding: 12px 16px;
+    top: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
   }
   
-  .navbar-subtitle {
-    display: none; /* En pantallas de celular pequeñas ocultamos la bajada para no ocupar ancho */
-  }
+
 
   .navbar-step-label {
     display: none; /* En pantallas pequeñas mostramos solo los iconos de las pills para evitar desbordamiento */
