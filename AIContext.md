@@ -15,11 +15,14 @@ ViMARA (Visualizador de Maquetas de Arquitectura en Realidad Aumentada) es una p
 - [x] Construcción y exportación de Unity WebGL a `public/unity_ar/` con soporte responsive 100vw/100vh.
 - [x] Integración de `UnityARViewer.jsx` en la ruta `/ar-view` de React.
 - [x] Configuración de `vercel.json` con permisos de seguridad y optimizaciones de streaming.
-- [x] Creación de la rama `feature/unity-webar-integration`.
-- [x] Actualización de paneles informativos en `MainMenu.jsx` destacando capacidades WebAR, SLAM y flujo BIM/3D.
+- [x] Actualización de paneles informativos en `MainMenu.jsx` con carrusel responsive en móviles y 3 columnas en PC.
+- [x] Implementación de carrusel horizontal con `scroll-snap` para tarjetas de modo AR y eliminación de artefactos en Safari iOS.
+- [x] Reorganización integral de carpetas en `unity_ar/Assets/` (`Assets/Scripts/AR`, `Assets/UI/UIToolkit`, `Assets/Scenes/Legacy`) con preservación de `.meta` y escena activa `WebAR_InstantTracking.unity`.
+- [x] Conversión de `SampleSelector` a acordeón y estandarización a nomenclatura 'Modelos'.
+- [x] Fusión completa de mejoras hacia `main` y despliegue en Vercel.
 
 ## Próximos Pasos (TODO)
-- [ ] Probar la experiencia WebAR desplegada en Vercel desde dispositivos móviles reales.
+- [ ] Validar el despliegue oficial de `main` en `https://vimara-3d.vercel.app/` en dispositivos móviles reales (iPhone y Android).
 - [ ] Implementar carga dinámica de modelos 3D (`.glb` / `.gltf`) directamente hacia el visor de Unity.
 - [ ] Agregar controles de interfaz superpuestos en React (reinicio de anclaje, selector de modelos, ajuste de escala).
 
