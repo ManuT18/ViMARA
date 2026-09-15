@@ -510,6 +510,22 @@ button, input, select, textarea, a, .touch-target {
 }
 
 /* Mode Selection Horizontal Scroll Carousel */
+.mode-selection-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+@media (max-width: 768px) {
+  .mode-selection-page {
+    padding: 20px 16px;
+    gap: 20px;
+  }
+}
+
 .mode-cards-container {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -525,6 +541,11 @@ button, input, select, textarea, a, .touch-target {
   gap: 16px;
   position: relative;
   border-radius: var(--radius-lg);
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -535,7 +556,7 @@ button, input, select, textarea, a, .touch-target {
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     gap: 14px;
-    padding: 6px 16px 14px 16px;
+    padding: 8px 16px 16px 16px;
     margin-left: -16px;
     margin-right: -16px;
     scrollbar-width: none;
@@ -552,5 +573,6 @@ button, input, select, textarea, a, .touch-target {
     padding: 22px 18px;
   }
 }
+
 
 

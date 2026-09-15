@@ -19,17 +19,7 @@ export default function ModeSelection() {
   };
 
   return (
-    <div
-      className="animate-fade-in"
-      style={{
-        maxWidth: '900px',
-        margin: '0 auto',
-        padding: '32px 24px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '32px'
-      }}
-    >
+    <div className="mode-selection-page animate-fade-in">
       {/* Top Header & Navigation */}
       <div className="page-top-bar">
         <button className="page-back-btn" onClick={handleBackToMenu}>
@@ -64,10 +54,10 @@ export default function ModeSelection() {
         {/* Option 1: Seguimiento por Marcador */}
         <div
           onClick={() => handleSelectMode('marker')}
-          className="glass-card mode-card"
+          className="mode-card"
           style={{
-            border: trackingMode === 'marker' ? '2px solid var(--accent-primary)' : '1px solid var(--border-glass)',
-            background: trackingMode === 'marker' ? 'rgba(59, 130, 246, 0.12)' : 'rgba(255, 255, 255, 0.03)'
+            border: trackingMode === 'marker' ? '2px solid var(--accent-primary)' : '1px solid var(--border-light)',
+            background: trackingMode === 'marker' ? 'rgba(59, 130, 246, 0.08)' : '#ffffff'
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -109,10 +99,10 @@ export default function ModeSelection() {
         {/* Option 2: Seguimiento por Plano */}
         <div
           onClick={() => handleSelectMode('plane')}
-          className="glass-card mode-card"
+          className="mode-card"
           style={{
-            border: trackingMode === 'plane' ? '2px solid #8b5cf6' : '1px solid var(--border-glass)',
-            background: trackingMode === 'plane' ? 'rgba(139, 92, 246, 0.12)' : 'rgba(255, 255, 255, 0.03)'
+            border: trackingMode === 'plane' ? '2px solid #8b5cf6' : '1px solid var(--border-light)',
+            background: trackingMode === 'plane' ? 'rgba(139, 92, 246, 0.08)' : '#ffffff'
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
