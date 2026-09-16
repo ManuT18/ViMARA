@@ -171,8 +171,9 @@
 
         if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
             container.className = "unity-mobile";
-            // Cap devicePixelRatio to 1.5 on mobile to guarantee steady 60 FPS and avoid SLAM tracking drops
-            config.devicePixelRatio = Math.min(window.devicePixelRatio, 1.5);
+            //config.matchWebGLToCanvasSize = false;    
+            //set devicePixelRatio=1; to avoid draining fillrate performance on mobile and override low DPI mode
+            config.devicePixelRatio = window.devicePixelRatio;
         }
         loadingCover.style.display = "";
 
@@ -183,7 +184,30 @@
         //script.onload = () => { CreateUnityLoader();   };
         document.body.appendChild(script);
 
-        window.zappar.permission_request_ui_promise().then(WaitForZCVLoad);
+        async function requestMotionPermissions() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    await DeviceOrientationEvent.requestPermission();
+                } catch (e) {
+                    console.warn('DeviceOrientation error:', e);
+                }
+            }
+            if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+                try {
+                    await DeviceMotionEvent.requestPermission();
+                } catch (e) {
+                    console.warn('DeviceMotion error:', e);
+                }
+            }
+        }
+
+        window.addEventListener('touchstart', requestMotionPermissions, { once: true });
+        window.addEventListener('click', requestMotionPermissions, { once: true });
+
+        window.zappar.permission_request_ui_promise().then(async () => {
+            await requestMotionPermissions();
+            WaitForZCVLoad();
+        });
 
         function WaitForZCVLoad() {
             if (zappar.loaded()) {
