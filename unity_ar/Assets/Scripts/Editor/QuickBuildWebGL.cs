@@ -15,20 +15,14 @@ namespace ViMARA.Editor
         private const string ScenePath = "Assets/Scenes/WebAR_InstantTracking.unity";
         private const string OutputRelativePath = "../public/unity_ar";
 
-        [MenuItem("ViMARA/⚡ Compilar WebGL Rápido (Silencioso) %#b", priority = 1)]
+        [MenuItem("ViMARA/⚡ Compilar WebGL Rápido (Desarrollo <30s) %#b", priority = 1)]
         public static void BuildWebGLFast()
         {
-            // Hereda el modo de desarrollo si está activo en Build Settings, o usa modo rápido
-            BuildOptions options = BuildOptions.None;
-            if (EditorUserBuildSettings.development)
-            {
-                options |= BuildOptions.Development;
-            }
-
-            PerformBuild(options, "Rápida");
+            // Forzar modo Development para omitir el pase pesado de wasm-opt y compilar en ~20-30s
+            PerformBuild(BuildOptions.Development, "Desarrollo Rápido (<30s)");
         }
 
-        [MenuItem("ViMARA/📦 Compilar WebGL Release (Producción)", priority = 2)]
+        [MenuItem("ViMARA/📦 Compilar WebGL Producción (Release minificado)", priority = 2)]
         public static void BuildWebGLRelease()
         {
             PerformBuild(BuildOptions.None, "Release / Producción");
