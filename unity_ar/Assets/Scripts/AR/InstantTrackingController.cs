@@ -5,8 +5,7 @@ namespace ViMARA.AR
 {
     /// <summary>
     /// Controlador para Zappar Instant Tracking.
-    /// Permite anclar y re-anclar objetos tanto en dispositivos móviles (Touch) como en PC/Laptop (Mouse Click / Teclado).
-    /// Incorpora suavizado (Damping/Lerp) para estabilizar el ancla y evitar temblores bruscos.
+    /// Incorpora suavizado (Damping/Lerp) y corrección de orientación respecto a la gravedad.
     /// </summary>
     [RequireComponent(typeof(ZapparInstantTrackingTarget))]
     public class InstantTrackingController : MonoBehaviour
@@ -14,30 +13,25 @@ namespace ViMARA.AR
         private ZapparInstantTrackingTarget m_trackingTarget;
 
         [Header("Configuración de Interacción")]
-        [Tooltip("Si está activo, tocar la pantalla o hacer clic fijará o liberará el anclaje (Toggle).")]
         public bool AllowTouchToggle = true;
-
-        [Tooltip("Tecla para resetear y reposicionar el anclaje.")]
         public KeyCode ResetKey = KeyCode.Space;
+        
+        [Header("Posicionamiento Relativo (Offset)")]
+        [Tooltip("Distancia a la que aparece la maqueta frente a la cámara antes de anclarla.")]
+        public float PreviewDistanceZ = -3f;
+        public float PreviewOffsetY = 0f;
 
         [Header("Estabilidad y Filtrado (Damping)")]
-        [Tooltip("Activa la interpolación suave para evitar que el objeto salte bruscamente.")]
         public bool EnableSmoothing = true;
+        [Range(1f, 30f)] public float PositionLerpSpeed = 12f;
+        [Range(1f, 30f)] public float RotationLerpSpeed = 12f;
 
-        [Tooltip("Velocidad de interpolación de la posición. Valores más bajos = más suave pero más lento.")]
-        [Range(1f, 30f)]
-        public float PositionLerpSpeed = 12f;
-
-        [Tooltip("Velocidad de interpolación de la rotación.")]
-        [Range(1f, 30f)]
-        public float RotationLerpSpeed = 12f;
-
-        // Estado suavizado interno
         private Vector3 m_smoothedPosition;
         private Quaternion m_smoothedRotation;
-        
-        // Flag para ignorar saltos grandes al colocar por primera vez
         private bool m_justPlacedOrReset = true;
+        
+        // Nuestro estado de anclaje personalizado
+        private bool m_isAnchored = false;
 
         private void Awake()
         {
@@ -52,18 +46,38 @@ namespace ViMARA.AR
                 m_smoothedRotation = transform.localRotation;
             }
         }
-
-        // Usamos LateUpdate para asegurarnos de que corremos DESPUÉS de ZapparInstantTrackingTarget.Update()
-        private void LateUpdate()
+        
+        private void Update()
         {
-            if (m_trackingTarget == null) return;
+            if (m_trackingTarget == null || m_trackingTarget.InstantTracker == null) return;
+
+            // Para evitar que Zappar asigne la orientación torcida (MINUS_Z_AWAY_FROM_USER),
+            // siempre le decimos que "ya está ubicado" internamente, así nosotros tomamos
+            // el control total del modo "preview" (flotando frente a cámara).
+            if (!m_trackingTarget.UserHasPlaced)
+            {
+                m_trackingTarget.PlaceTrackerAnchor();
+            }
 
             HandleInput();
 
-            if (EnableSmoothing)
+            // Si NO estamos anclados, forzamos la pose relativa a la cámara pero ALINEADA A LA GRAVEDAD
+            if (!m_isAnchored)
             {
-                ApplySmoothing();
+                // MINUS_Z_HEADING alinea el eje Y con la gravedad, y el eje -Z hacia donde mira la cámara.
+                // Esto garantiza que el cubo/maqueta no se tuerza al mover el celular en diagonal.
+                Z.InstantWorldTrackerAnchorPoseSetFromCameraOffset(
+                    m_trackingTarget.InstantTracker.Value, 
+                    0f, PreviewOffsetY, PreviewDistanceZ, 
+                    Z.InstantTrackerTransformOrientation.MINUS_Z_HEADING
+                );
             }
+        }
+
+        private void LateUpdate()
+        {
+            if (m_trackingTarget == null || !EnableSmoothing) return;
+            ApplySmoothing();
         }
 
         private void HandleInput()
@@ -90,22 +104,22 @@ namespace ViMARA.AR
 
             if (isClickOrTouchDown)
             {
-                if (!m_trackingTarget.UserHasPlaced)
+                if (!m_isAnchored)
                 {
-                    m_trackingTarget.PlaceTrackerAnchor();
-                    m_justPlacedOrReset = true; // Forzamos snap al colocar
+                    m_isAnchored = true;
+                    m_justPlacedOrReset = true;
                     Debug.Log("[ViMARA AR] Anclaje FIJADO en el espacio.");
                 }
                 else
                 {
-                    m_trackingTarget.ResetTrackerAnchor();
-                    m_justPlacedOrReset = true; // Forzamos snap al soltar
+                    m_isAnchored = false;
+                    m_justPlacedOrReset = true;
                     Debug.Log("[ViMARA AR] Anclaje LIBERADO. El objeto vuelve a acompañar a la cámara.");
                 }
             }
-            else if (isResetKeyPressed && m_trackingTarget.UserHasPlaced)
+            else if (isResetKeyPressed && m_isAnchored)
             {
-                m_trackingTarget.ResetTrackerAnchor();
+                m_isAnchored = false;
                 m_justPlacedOrReset = true;
                 Debug.Log("[ViMARA AR] Anclaje reiniciado vía teclado.");
             }
@@ -113,25 +127,21 @@ namespace ViMARA.AR
 
         private void ApplySmoothing()
         {
-            // Zappar acaba de actualizar transform.localPos/Rot en su Update()
             Vector3 rawPosition = transform.localPosition;
             Quaternion rawRotation = transform.localRotation;
 
             if (m_justPlacedOrReset)
             {
-                // Si acabamos de anclar o soltar, hacemos "snap" inmediato sin interpolar para evitar un viaje largo
                 m_smoothedPosition = rawPosition;
                 m_smoothedRotation = rawRotation;
                 m_justPlacedOrReset = false;
             }
             else
             {
-                // Interpolamos suavemente desde nuestra última posición suavizada hacia la nueva pose cruda
                 m_smoothedPosition = Vector3.Lerp(m_smoothedPosition, rawPosition, Time.deltaTime * PositionLerpSpeed);
                 m_smoothedRotation = Quaternion.Slerp(m_smoothedRotation, rawRotation, Time.deltaTime * RotationLerpSpeed);
             }
 
-            // Aplicamos la pose suavizada al transform, que es lo que verá la cámara
             transform.localPosition = m_smoothedPosition;
             transform.localRotation = m_smoothedRotation;
         }
