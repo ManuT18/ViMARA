@@ -4,14 +4,12 @@ using Zappar;
 namespace ViMARA.AR
 {
     /// <summary>
-    /// Controlador avanzado para Zappar Instant Tracking en ViMARA.
-    /// Incorpora:
-    /// 1. Retícula visual de colocación en el suelo (Placement Reticle Ring).
-    /// 2. Calibración de proyección para superficies de escritorio y suelo (Offset ergonómico).
-    /// 3. Suavizado inteligente (Camera / Target Damping).
-    /// 4. Filtro contra saltos bruscos (Outlier Clamping).
-    /// 5. Alineación con la gravedad terrestre (MINUS_Z_HEADING).
-    /// 6. Toggle táctil para anclar y desanclar libremente.
+    /// Controlador oficial y optimizado para Zappar Instant Tracking en ViMARA.
+    /// Características:
+    /// 1. Utiliza el motor SLAM nativo de Zappar (Kalman Filter / Bundle Adjustment en C++ WebAssembly).
+    /// 2. Retícula visual de apuntado (Aro en plano horizontal) activa en modo preview y oculta al fijar.
+    /// 3. Toggle táctil fluido (Toque: Fijar / Desanclar).
+    /// 4. Calibración ergonómica hacia la mesa o suelo.
     /// </summary>
     [RequireComponent(typeof(ZapparInstantTrackingTarget))]
     public class InstantTrackingController : MonoBehaviour
@@ -22,34 +20,17 @@ namespace ViMARA.AR
         public bool AllowTouchToggle = true;
         public KeyCode ResetKey = KeyCode.Space;
 
-        [Header("Posicionamiento Relativo (Offset de Mesa / Suelo)")]
-        [Tooltip("Distancia inicial frente a la cámara. -1.4m es ideal para ver maquetas sobre escritorios o mesas.")]
+        [Header("Posicionamiento Relativo (Mesa / Suelo)")]
+        [Tooltip("Distancia inicial frente a la cámara (en metros).")]
         public float PreviewDistanceZ = -1.4f;
 
-        [Tooltip("Desplazamiento vertical hacia abajo. -0.45m inclina el punto de anclaje de forma natural hacia la superficie.")]
+        [Tooltip("Desplazamiento vertical hacia abajo para proyectar sobre el escritorio.")]
         public float PreviewOffsetY = -0.45f;
 
         [Header("Retícula Visual de Colocación (Placement Reticle)")]
         public bool ShowPlacementReticle = true;
         public float ReticleRadius = 0.35f;
-        public Color ReticleColor = new Color(0.22f, 0.74f, 0.97f, 0.85f); // Sky blue neon
-
-        [Header("Estabilidad y Filtrado (Damping)")]
-        public bool EnableSmoothing = true;
-
-        [Tooltip("Velocidad de interpolación de posición.")]
-        [Range(1f, 35f)] public float PositionLerpSpeed = 16f;
-
-        [Tooltip("Velocidad de interpolación de rotación.")]
-        [Range(1f, 35f)] public float RotationLerpSpeed = 16f;
-
-        [Tooltip("Distancia máxima permitida de salto por frame para filtrar pérdidas momentáneas de tracking.")]
-        public float MaxStepDistance = 1.5f;
-
-        private Vector3 m_smoothedPosition;
-        private Quaternion m_smoothedRotation;
-        private bool m_justPlacedOrReset = true;
-        private bool m_isAnchored = false;
+        public Color ReticleColor = new Color(0.22f, 0.74f, 0.97f, 0.9f); // Azul cielo brillante
 
         // Referencia a la retícula procedural
         private GameObject m_reticleObject;
@@ -63,13 +44,6 @@ namespace ViMARA.AR
 
         private void Start()
         {
-            Transform targetTransform = GetActiveMovingTransform();
-            if (targetTransform != null)
-            {
-                m_smoothedPosition = targetTransform.localPosition;
-                m_smoothedRotation = targetTransform.localRotation;
-            }
-
             UpdateReticleState();
         }
 
@@ -80,7 +54,7 @@ namespace ViMARA.AR
             // Creamos un GameObject hijo para dibujar el aro guía en el plano Y = 0
             m_reticleObject = new GameObject("PlacementReticle_Ring");
             m_reticleObject.transform.SetParent(transform, false);
-            m_reticleObject.transform.localPosition = new Vector3(0, 0.005f, 0); // Ligeramente arriba de 0 para evitar z-fighting
+            m_reticleObject.transform.localPosition = new Vector3(0, 0.005f, 0); // Ligeramente sobre el plano para evitar z-fighting
             m_reticleObject.transform.localRotation = Quaternion.identity;
 
             m_reticleLine = m_reticleObject.AddComponent<LineRenderer>();
@@ -89,7 +63,7 @@ namespace ViMARA.AR
             m_reticleLine.startWidth = 0.015f;
             m_reticleLine.endWidth = 0.015f;
 
-            // Shader estándar de partículas o unlit para visibilidad clara
+            // Shader unlit para máxima visibilidad en WebGL
             Shader unlitShader = Shader.Find("Universal Render Pipeline/Unlit");
             if (unlitShader == null) unlitShader = Shader.Find("Sprites/Default");
             if (unlitShader == null) unlitShader = Shader.Find("Unlit/Color");
@@ -100,7 +74,7 @@ namespace ViMARA.AR
             m_reticleLine.startColor = ReticleColor;
             m_reticleLine.endColor = ReticleColor;
 
-            // Generar vértices del círculo
+            // Generar los 48 vértices del círculo
             int segments = 48;
             m_reticleLine.positionCount = segments;
             float angleStep = 360f / segments;
@@ -115,10 +89,10 @@ namespace ViMARA.AR
 
         private void UpdateReticleState()
         {
-            if (m_reticleObject != null)
+            if (m_reticleObject != null && m_trackingTarget != null)
             {
-                // El aro sólo se muestra cuando NO está anclado (modo previsualización / apuntado)
-                m_reticleObject.SetActive(!m_isAnchored && ShowPlacementReticle);
+                // El aro sólo se muestra cuando NO está anclado
+                m_reticleObject.SetActive(!m_trackingTarget.UserHasPlaced && ShowPlacementReticle);
             }
         }
 
@@ -126,16 +100,10 @@ namespace ViMARA.AR
         {
             if (m_trackingTarget == null || m_trackingTarget.InstantTracker == null) return;
 
-            // Mantenemos al componente de Zappar en estado 'Placed' para gobernar nosotros la orientación
-            if (!m_trackingTarget.UserHasPlaced)
-            {
-                m_trackingTarget.PlaceTrackerAnchor();
-            }
-
             HandleInput();
 
-            // Si NO está anclado, proyectamos el modelo frente a la cámara alineado a la gravedad sobre el plano
-            if (!m_isAnchored)
+            // Mientras esté en modo preview (no anclado), posicionamos el anclaje frente al usuario
+            if (!m_trackingTarget.UserHasPlaced)
             {
                 Z.InstantWorldTrackerAnchorPoseSetFromCameraOffset(
                     m_trackingTarget.InstantTracker.Value,
@@ -143,29 +111,12 @@ namespace ViMARA.AR
                     Z.InstantTrackerTransformOrientation.MINUS_Z_HEADING
                 );
 
-                // Pulso sutil de rotación o respiración en la retícula mientras apunta
+                // Animación de rotación suave en la retícula
                 if (m_reticleObject != null && m_reticleObject.activeSelf)
                 {
-                    m_reticleObject.transform.Rotate(Vector3.up, 30f * Time.deltaTime, Space.Self);
+                    m_reticleObject.transform.Rotate(Vector3.up, 25f * Time.deltaTime, Space.Self);
                 }
             }
-        }
-
-        private void LateUpdate()
-        {
-            if (!EnableSmoothing) return;
-            ApplyActiveSmoothing();
-        }
-
-        private Transform GetActiveMovingTransform()
-        {
-            // Si la cámara tiene asignado el Target como Origin, la cámara es el objeto que se mueve en el mundo
-            if (ZapparCamera.Instance != null && ZapparCamera.Instance.TrackerAtOrigin != null)
-            {
-                return ZapparCamera.Instance.transform;
-            }
-            // De lo contrario, el Target es el objeto que se desplaza frente a la cámara
-            return transform;
         }
 
         private void HandleInput()
@@ -192,60 +143,25 @@ namespace ViMARA.AR
 
             if (isClickOrTouchDown)
             {
-                if (!m_isAnchored)
+                if (!m_trackingTarget.UserHasPlaced)
                 {
-                    m_isAnchored = true;
-                    m_justPlacedOrReset = true;
+                    m_trackingTarget.PlaceTrackerAnchor();
                     UpdateReticleState();
-                    Debug.Log("[ViMARA AR] Anclaje FIJADO sobre la superficie física.");
+                    Debug.Log("[ViMARA AR] Anclaje FIJADO sobre el plano.");
                 }
                 else
                 {
-                    m_isAnchored = false;
-                    m_justPlacedOrReset = true;
+                    m_trackingTarget.ResetTrackerAnchor();
                     UpdateReticleState();
-                    Debug.Log("[ViMARA AR] Anclaje LIBERADO. Retícula visual de apuntado activa.");
+                    Debug.Log("[ViMARA AR] Anclaje LIBERADO. Retícula activa.");
                 }
             }
-            else if (isResetKeyPressed && m_isAnchored)
+            else if (isResetKeyPressed && m_trackingTarget.UserHasPlaced)
             {
-                m_isAnchored = false;
-                m_justPlacedOrReset = true;
+                m_trackingTarget.ResetTrackerAnchor();
                 UpdateReticleState();
                 Debug.Log("[ViMARA AR] Anclaje reiniciado vía teclado.");
             }
-        }
-
-        private void ApplyActiveSmoothing()
-        {
-            Transform targetTransform = GetActiveMovingTransform();
-            if (targetTransform == null) return;
-
-            Vector3 rawPosition = targetTransform.localPosition;
-            Quaternion rawRotation = targetTransform.localRotation;
-
-            if (m_justPlacedOrReset)
-            {
-                m_smoothedPosition = rawPosition;
-                m_smoothedRotation = rawRotation;
-                m_justPlacedOrReset = false;
-            }
-            else
-            {
-                // Filtro contra saltos atípicos (outliers) por motion blur extremo
-                float deltaDist = Vector3.Distance(m_smoothedPosition, rawPosition);
-                if (deltaDist > MaxStepDistance)
-                {
-                    rawPosition = m_smoothedPosition + (rawPosition - m_smoothedPosition).normalized * MaxStepDistance;
-                }
-
-                // Interpolación exponencial amortiguada
-                m_smoothedPosition = Vector3.Lerp(m_smoothedPosition, rawPosition, Time.deltaTime * PositionLerpSpeed);
-                m_smoothedRotation = Quaternion.Slerp(m_smoothedRotation, rawRotation, Time.deltaTime * RotationLerpSpeed);
-            }
-
-            targetTransform.localPosition = m_smoothedPosition;
-            targetTransform.localRotation = m_smoothedRotation;
         }
     }
 }
