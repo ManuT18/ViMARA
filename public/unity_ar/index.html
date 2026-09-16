@@ -184,30 +184,7 @@
         //script.onload = () => { CreateUnityLoader();   };
         document.body.appendChild(script);
 
-        async function requestMotionPermissions() {
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try {
-                    await DeviceOrientationEvent.requestPermission();
-                } catch (e) {
-                    console.warn('DeviceOrientation error:', e);
-                }
-            }
-            if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-                try {
-                    await DeviceMotionEvent.requestPermission();
-                } catch (e) {
-                    console.warn('DeviceMotion error:', e);
-                }
-            }
-        }
-
-        window.addEventListener('touchstart', requestMotionPermissions, { once: true });
-        window.addEventListener('click', requestMotionPermissions, { once: true });
-
-        window.zappar.permission_request_ui_promise().then(async () => {
-            await requestMotionPermissions();
-            WaitForZCVLoad();
-        });
+        window.zappar.permission_request_ui_promise().then(WaitForZCVLoad);
 
         function WaitForZCVLoad() {
             if (zappar.loaded()) {
