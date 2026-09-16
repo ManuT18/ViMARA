@@ -150,7 +150,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Zappar.UAR::Zappar.ZapparInstantTrackingTarget
   m_anchorOffsetFromCamera: {x: 0, y: 0, z: -3}
-  m_placeOnTouch: 1
+  m_placeOnTouch: 0
   MoveAnchorOnZ: 0
   m_zCamera: {fileID: 0}
   m_minZDistance: 3
