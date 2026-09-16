@@ -1,0 +1,19 @@
+{
+    "name": "ViMARA.Editor",
+    "rootNamespace": "ViMARA.Editor",
+    "references": [
+        "NewAssembly",
+        "Zappar.UAR"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
