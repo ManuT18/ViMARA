@@ -137,11 +137,11 @@
         var db = indexedDB.open("dummy_indexdb", 1); // iOS 14.6 fix; the call to open indexdb hangs forever otherwise
 
         const buildUrl = "Build";
-        const loaderUrl = buildUrl + "/Builds.loader.js";
+        const loaderUrl = buildUrl + "/unity_ar.loader.js";
         const config = {
-            dataUrl: buildUrl + "/Builds.data",
-            frameworkUrl: buildUrl + "/Builds.framework.js",
-            codeUrl: buildUrl + "/Builds.wasm",
+            dataUrl: buildUrl + "/unity_ar.data",
+            frameworkUrl: buildUrl + "/unity_ar.framework.js",
+            codeUrl: buildUrl + "/unity_ar.wasm",
             streamingAssetsUrl: "StreamingAssets",
             companyName: "DefaultCompany",
             productName: "ViMARA",
