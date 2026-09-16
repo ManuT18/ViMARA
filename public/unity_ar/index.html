@@ -171,9 +171,8 @@
 
         if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
             container.className = "unity-mobile";
-            //config.matchWebGLToCanvasSize = false;    
-            //set devicePixelRatio=1; to avoid draining fillrate performance on mobile and override low DPI mode
-            config.devicePixelRatio = window.devicePixelRatio;
+            // Cap devicePixelRatio to 1.5 on mobile to guarantee steady 60 FPS and avoid SLAM tracking drops
+            config.devicePixelRatio = Math.min(window.devicePixelRatio, 1.5);
         }
         loadingCover.style.display = "";
 
