@@ -162,7 +162,8 @@ export default function UnityARViewer({ trackingMode = 'surface' }) {
               height: '34px', 
               minHeight: '34px',
               background: isFullscreen ? 'rgba(15, 23, 42, 0.85)' : undefined,
-              borderColor: isFullscreen ? 'rgba(255,255,255,0.2)' : undefined
+              borderColor: isFullscreen ? 'rgba(255,255,255,0.2)' : undefined,
+              color: isFullscreen ? '#fff' : undefined
             }}
           >
             <RotateCcw size={14} />
@@ -214,19 +215,6 @@ export default function UnityARViewer({ trackingMode = 'surface' }) {
           }}
         />
       </div>
-
-      {!isFullscreen && (
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          fontSize: '0.82rem',
-          color: 'var(--text-secondary, #94a3b8)',
-          padding: '2px 4px'
-        }}>
-          <span>👉 <strong>En celular</strong>: Apuntá al plano y tocá la pantalla para fijar o liberar el modelo.</span>
-          <span>👉 <strong>En laptop</strong>: Hacé clic con el mouse o presioná <code>Espacio</code> para interactuar.</span>
-        </div>
-      )}
     </div>
   );
 }
