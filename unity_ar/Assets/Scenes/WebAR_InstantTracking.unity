@@ -185,11 +185,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: NewAssembly::ViMARA.AR.InstantTrackingController
   AllowTouchToggle: 1
   ResetKey: 32
-  PreviewDistanceZ: -1.4
-  PreviewOffsetY: -0.45
+  SurfaceOffset: {x: 0, y: -0.45, z: -1.4}
   ShowPlaneVisualizer: 1
   ReticleRadius: 0.35
   ThemeColor: {r: 0.14, g: 0.65, b: 1, a: 0.85}
+  ModelContainer: {fileID: 359664345}
 --- !u!850595691 &131171770
 LightingSettings:
   m_ObjectHideFlags: 0
@@ -777,10 +777,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03b0f3f9cd1f10445a1fddecec0aacb1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: NewAssembly::ViMARA.AR.PersistentMarkerController
-  PersistInWorldWhenLost: 1
-  TrackingSmoothSpeed: 15
-  ModelContainer: {fileID: 510392387}
   ElevationOffset: 0.15
+  TrackingLerpSpeed: 12
+  TargetModel: {fileID: 510392387}
 --- !u!1 &1215035208
 GameObject:
   m_ObjectHideFlags: 0
