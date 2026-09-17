@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace ViMARA.AR
 {
@@ -29,6 +30,7 @@ namespace ViMARA.AR
         private Vector2 m_lastTouchPos;
         private float m_lastPinchDistance;
         private bool m_isInteracting = false;
+        private bool m_isMouseInteracting = false;
 
         private void Start()
         {
@@ -51,6 +53,7 @@ namespace ViMARA.AR
 
                 if (touch.phase == TouchPhase.Began)
                 {
+                    if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject(touch.fingerId)) return;
                     m_lastTouchPos = touch.position;
                     m_isInteracting = true;
                 }
@@ -74,10 +77,11 @@ namespace ViMARA.AR
 
                 if (touch0.phase == TouchPhase.Began || touch1.phase == TouchPhase.Began || !m_isInteracting)
                 {
+                    if (EventSystem.current != null && (EventSystem.current.IsPointerOverGameObject(touch0.fingerId) || EventSystem.current.IsPointerOverGameObject(touch1.fingerId))) return;
                     m_lastPinchDistance = currentDistance;
                     m_isInteracting = true;
                 }
-                else if (touch0.phase == TouchPhase.Moved || touch1.phase == TouchPhase.Moved)
+                else if ((touch0.phase == TouchPhase.Moved || touch1.phase == TouchPhase.Moved) && m_isInteracting)
                 {
                     float deltaDistance = currentDistance - m_lastPinchDistance;
                     float scaleFactor = 1f + (deltaDistance * PinchZoomSpeed);
@@ -101,9 +105,11 @@ namespace ViMARA.AR
             // Rotación con Clic Izquierdo del Mouse
             if (Input.GetMouseButtonDown(0))
             {
+                if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
                 m_lastTouchPos = Input.mousePosition;
+                m_isMouseInteracting = true;
             }
-            else if (Input.GetMouseButton(0))
+            else if (Input.GetMouseButton(0) && m_isMouseInteracting)
             {
                 float deltaX = Input.mousePosition.x - m_lastTouchPos.x;
                 if (Mathf.Abs(deltaX) > 0.1f)
@@ -112,11 +118,16 @@ namespace ViMARA.AR
                 }
                 m_lastTouchPos = Input.mousePosition;
             }
+            else if (Input.GetMouseButtonUp(0))
+            {
+                m_isMouseInteracting = false;
+            }
 
             // Escalado con Rueda del Mouse
             float scroll = Input.GetAxis("Mouse ScrollWheel");
             if (Mathf.Abs(scroll) > 0.001f)
             {
+                if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
                 float scaleFactor = 1f + (scroll * ScrollZoomSpeed);
                 float newScaleX = Mathf.Clamp(m_targetScale.x * scaleFactor, MinScale, MaxScale);
                 float newScaleY = Mathf.Clamp(m_targetScale.y * scaleFactor, MinScale, MaxScale);

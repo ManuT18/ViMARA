@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using Zappar;
 
 namespace ViMARA.AR
@@ -201,12 +202,18 @@ namespace ViMARA.AR
                     Touch touch = Input.GetTouch(0);
                     if (touch.phase == TouchPhase.Began)
                     {
-                        isClickOrTouchDown = true;
+                        if (EventSystem.current == null || !EventSystem.current.IsPointerOverGameObject(touch.fingerId))
+                        {
+                            isClickOrTouchDown = true;
+                        }
                     }
                 }
                 else if (Input.GetMouseButtonDown(0))
                 {
-                    isClickOrTouchDown = true;
+                    if (EventSystem.current == null || !EventSystem.current.IsPointerOverGameObject())
+                    {
+                        isClickOrTouchDown = true;
+                    }
                 }
             }
 
@@ -236,6 +243,15 @@ namespace ViMARA.AR
                 UpdateVisualState();
                 Debug.Log("[ViMARA AR] Anclaje liberado. Escaneando superficie...");
             }
+        }
+
+        private void OnDestroy()
+        {
+            if (m_ringMaterial != null) Destroy(m_ringMaterial);
+            if (m_innerMaterial != null) Destroy(m_innerMaterial);
+            if (m_dotGridMaterial != null) Destroy(m_dotGridMaterial);
+            // No need to destroy m_dotGridPlane or m_visualizerRoot manually since they are child GameObjects 
+            // and will be destroyed when this GameObject is destroyed, but it's safe to destroy materials.
         }
     }
 }
