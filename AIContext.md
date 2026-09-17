@@ -22,6 +22,7 @@ ViMARA (Visualizador de Maquetas de Arquitectura en Realidad Aumentada) es una p
 - [x] Visualizador de escaneo de plano estilo ARKit con matriz de puntos y retícula animada (`InstantTrackingController.cs`).
 - [x] Herramienta de autoconfiguración de escena en Unity Editor (`ViMARA > Setup AR Scene`).
 - [x] Optimización de compilación rápida en Unity (`ViMARA > Fast WebGL Build (<30s)`).
+- [x] Corrección de casos límite de interacción UI (`EventSystem.current.IsPointerOverGameObject`) y eliminación de fugas de memoria en materiales procedurales.
 - [x] Despliegue sincronizado en repositorio remoto (`main`).
 
 ## Próximos Pasos (TODO)
