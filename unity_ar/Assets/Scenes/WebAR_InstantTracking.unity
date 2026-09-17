@@ -187,9 +187,9 @@ MonoBehaviour:
   ResetKey: 32
   PreviewDistanceZ: -1.4
   PreviewOffsetY: -0.45
-  ShowPlacementReticle: 1
+  ShowPlaneVisualizer: 1
   ReticleRadius: 0.35
-  ReticleColor: {r: 0.22, g: 0.74, b: 0.97, a: 0.9}
+  ThemeColor: {r: 0.14, g: 0.65, b: 1, a: 0.85}
 --- !u!850595691 &131171770
 LightingSettings:
   m_ObjectHideFlags: 0
@@ -269,6 +269,7 @@ GameObject:
   - component: {fileID: 359664344}
   - component: {fileID: 359664343}
   - component: {fileID: 359664342}
+  - component: {fileID: 359664346}
   m_Layer: 0
   m_Name: Cube
   m_TagString: Untagged
@@ -369,6 +370,25 @@ Transform:
   m_Children: []
   m_Father: {fileID: 99963335}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &359664346
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 359664341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f906019052332d24cb267a565a6f8b49, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: NewAssembly::ViMARA.AR.TouchManipulationController
+  RotationSpeed: 0.4
+  MouseRotationSpeed: 3.5
+  PinchZoomSpeed: 0.003
+  ScrollZoomSpeed: 0.15
+  MinScale: 0.05
+  MaxScale: 3
+  SmoothDamping: 12
 --- !u!1 &510392386
 GameObject:
   m_ObjectHideFlags: 0
@@ -381,6 +401,7 @@ GameObject:
   - component: {fileID: 510392390}
   - component: {fileID: 510392389}
   - component: {fileID: 510392388}
+  - component: {fileID: 510392391}
   m_Layer: 0
   m_Name: Cube_ImageTarget
   m_TagString: Untagged
@@ -397,7 +418,7 @@ Transform:
   m_GameObject: {fileID: 510392386}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0.15, z: 0}
   m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -481,6 +502,25 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 510392386}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &510392391
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 510392386}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f906019052332d24cb267a565a6f8b49, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: NewAssembly::ViMARA.AR.TouchManipulationController
+  RotationSpeed: 0.4
+  MouseRotationSpeed: 3.5
+  PinchZoomSpeed: 0.003
+  ScrollZoomSpeed: 0.15
+  MinScale: 0.05
+  MaxScale: 3
+  SmoothDamping: 12
 --- !u!28 &749685690
 Texture2D:
   m_ObjectHideFlags: 0
@@ -679,6 +719,7 @@ GameObject:
   m_Component:
   - component: {fileID: 972783421}
   - component: {fileID: 972783420}
+  - component: {fileID: 972783422}
   m_Layer: 0
   m_Name: Zappar Image Tracking Target
   m_TagString: Untagged
@@ -724,6 +765,22 @@ Transform:
   - {fileID: 510392387}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &972783422
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 972783419}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03b0f3f9cd1f10445a1fddecec0aacb1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: NewAssembly::ViMARA.AR.PersistentMarkerController
+  PersistInWorldWhenLost: 1
+  TrackingSmoothSpeed: 15
+  ModelContainer: {fileID: 510392387}
+  ElevationOffset: 0.15
 --- !u!1 &1215035208
 GameObject:
   m_ObjectHideFlags: 0
