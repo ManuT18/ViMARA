@@ -30,9 +30,10 @@ namespace ViMARA.AR
 
         private void Awake()
         {
-            // Optimización térmica y de batería en WebGL móvil (60 FPS estables)
-            Application.targetFrameRate = 60;
-            QualitySettings.vSyncCount = 0;
+            // IMPORTANT: In WebGL, forcing targetFrameRate can cause spin-loops that starve the browser's 
+            // video decoding thread, causing the AR camera feed to freeze after a few minutes. 
+            // We set it to -1 to let the browser natively sync via requestAnimationFrame.
+            Application.targetFrameRate = -1;
 
             DetectModeFromURL();
         }
