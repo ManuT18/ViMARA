@@ -33,15 +33,18 @@ export default function UnityARViewer({ trackingMode = 'surface' }) {
     };
   }, [handleFullscreenChange]);
 
-  // Bloquear el scroll del body cuando está en pantalla completa
+  // Bloquear el scroll del body y ocultar navbar en pantalla completa
   useEffect(() => {
     if (isFullscreen) {
       document.body.style.overflow = 'hidden';
+      document.body.classList.add('ar-fullscreen-active');
     } else {
       document.body.style.overflow = '';
+      document.body.classList.remove('ar-fullscreen-active');
     }
     return () => {
       document.body.style.overflow = '';
+      document.body.classList.remove('ar-fullscreen-active');
     };
   }, [isFullscreen]);
 
@@ -147,7 +150,7 @@ export default function UnityARViewer({ trackingMode = 'surface' }) {
         }}>
           <Camera size={18} color="var(--accent-primary, #3b82f6)" style={{ flexShrink: 0 }} />
           <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            Visor WebAR · Modo {trackingMode === 'marker' ? 'Marcador' : 'Plano'}
+            Modo {trackingMode === 'marker' ? 'Marcador' : 'Plano'}
           </span>
         </div>
 
