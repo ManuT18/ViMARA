@@ -6,8 +6,7 @@ namespace ViMARA.AR
 {
     /// <summary>
     /// Gestiona el modo activo de Realidad Aumentada (Superficie vs Marcador).
-    /// Detecta el modo desde los parámetros URL de React (?mode=marker o ?mode=surface),
-    /// sincroniza el AnchorOrigin de ZapparCamera y optimiza el consumo térmico/batería.
+    /// Configura dinámicamente ZapparCamera, optimiza el consumo térmico y coordina el anclaje.
     /// </summary>
     public class ARTrackingModeSwitcher : MonoBehaviour
     {
@@ -31,34 +30,32 @@ namespace ViMARA.AR
 
         private void Awake()
         {
-            // Optimización térmica y de batería en WebGL móvil (evita 120fps descontrolados)
+            // Optimización térmica y de batería en WebGL móvil (60 FPS estables)
             Application.targetFrameRate = 60;
             QualitySettings.vSyncCount = 0;
 
             DetectModeFromURL();
-            ApplyTrackingMode(m_currentMode);
         }
 
         private void Start()
         {
-            // Reaplicar después de que ZapparCamera se haya inicializado
             ApplyTrackingMode(m_currentMode);
         }
 
         private void DetectModeFromURL()
         {
             string url = Application.absoluteURL;
-            Debug.Log($"[ViMARA AR] URL actual del visor: {url}");
+            Debug.Log($"[ViMARA AR] URL del visor: {url}");
 
             if (!string.IsNullOrEmpty(url) && url.IndexOf("mode=marker", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 m_currentMode = TrackingMode.Marker;
-                Debug.Log("[ViMARA AR] Modo detectado desde URL: SEGUIMIENTO POR MARCADOR (Image Tracking).");
+                Debug.Log("[ViMARA AR] Modo activo: SEGUIMIENTO POR MARCADOR (World Lock).");
             }
             else
             {
                 m_currentMode = TrackingMode.Surface;
-                Debug.Log("[ViMARA AR] Modo detectado desde URL: SEGUIMIENTO POR SUPERFICIE (Instant Tracking).");
+                Debug.Log("[ViMARA AR] Modo activo: SEGUIMIENTO POR SUPERFICIE (Plano).");
             }
         }
 
@@ -86,8 +83,9 @@ namespace ViMARA.AR
                     ImageTrackingRoot.SetActive(true);
                     if (ZapparCamera.Instance != null)
                     {
-                        var imageTargetComp = ImageTrackingRoot.GetComponent<ZapparTrackingTarget>();
-                        ZapparCamera.Instance.AnchorOrigin = imageTargetComp;
+                        // En modo marcador con World-Lock, la cámara utiliza el giroscopio para mirar alrededor
+                        ZapparCamera.Instance.AnchorOrigin = null;
+                        ZapparCamera.Instance.CameraAttitudeFromGyro = true;
                     }
                 }
             }
@@ -99,13 +97,14 @@ namespace ViMARA.AR
                     InstantTrackingRoot.SetActive(true);
                     if (ZapparCamera.Instance != null)
                     {
-                        var instantTargetComp = InstantTrackingRoot.GetComponent<ZapparTrackingTarget>();
+                        var instantTargetComp = InstantTrackingRoot.GetComponent<ZapparInstantTrackingTarget>();
                         ZapparCamera.Instance.AnchorOrigin = instantTargetComp;
+                        ZapparCamera.Instance.CameraAttitudeFromGyro = false;
                     }
                 }
             }
 
-            Debug.Log($"[ViMARA AR] Modo de tracking aplicado: {m_currentMode} | AnchorOrigin: {(ZapparCamera.Instance != null ? ZapparCamera.Instance.AnchorOrigin?.name : "N/A")}");
+            Debug.Log($"[ViMARA AR] Modo aplicado: {m_currentMode}");
         }
     }
 }

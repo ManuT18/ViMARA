@@ -34,7 +34,6 @@ public class SceneSetupWindow : EditorWindow
 
         var persistentCtrl = imageTrackerObj.GetComponent<PersistentMarkerController>();
         if (persistentCtrl == null) persistentCtrl = imageTrackerObj.AddComponent<PersistentMarkerController>();
-        persistentCtrl.PersistInWorldWhenLost = true;
         persistentCtrl.ElevationOffset = 0.15f;
 
         // 3. Vincular referencias en el Switcher
@@ -47,6 +46,7 @@ public class SceneSetupWindow : EditorWindow
         {
             var instantCtrl = instantRoot.GetComponent<InstantTrackingController>();
             if (instantCtrl == null) instantCtrl = instantRoot.AddComponent<InstantTrackingController>();
+            instantCtrl.ShowPlaneVisualizer = true;
         }
 
         // 5. Configurar Cubo de Instant Tracking con elevación ergonómica y manipulación táctil
@@ -58,6 +58,13 @@ public class SceneSetupWindow : EditorWindow
             if (instantCube.GetComponent<TouchManipulationController>() == null)
             {
                 instantCube.AddComponent<TouchManipulationController>();
+            }
+
+            // Vincular al InstantTrackingController
+            if (instantRoot != null)
+            {
+                var instantCtrl = instantRoot.GetComponent<InstantTrackingController>();
+                if (instantCtrl != null) instantCtrl.ModelContainer = instantCube.transform;
             }
         }
 
@@ -73,7 +80,7 @@ public class SceneSetupWindow : EditorWindow
             {
                 newCube.AddComponent<TouchManipulationController>();
             }
-            persistentCtrl.ModelContainer = newCube.transform;
+            persistentCtrl.TargetModel = newCube.transform;
         }
         else if (existingCubeInTarget != null)
         {
@@ -83,11 +90,11 @@ public class SceneSetupWindow : EditorWindow
             {
                 existingCubeInTarget.gameObject.AddComponent<TouchManipulationController>();
             }
-            persistentCtrl.ModelContainer = existingCubeInTarget;
+            persistentCtrl.TargetModel = existingCubeInTarget;
         }
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
-        Debug.Log("[ViMARA] Escena AR configurada con Anclaje Persistente (World Lock), Gestos Táctiles y Visualizador de Escaneo.");
+        Debug.Log("[ViMARA] Escena AR reconfigurada exitosamente con Retícula de Escaneo, Anclaje Persistente y Prevención de Congelamientos.");
     }
 }

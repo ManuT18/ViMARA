@@ -4,12 +4,12 @@ using Zappar;
 namespace ViMARA.AR
 {
     /// <summary>
-    /// Controlador oficial para Zappar Instant Tracking en ViMARA.
+    /// Controlador optimizado para Zappar Instant Tracking en ViMARA.
     /// Características:
-    /// 1. Visualizador de Escaneo de Superficie estilo ARKit / ARCore con matriz de puntos y retícula animada.
-    /// 2. Toggle táctil fluido (Tocar pantalla para fijar o liberar).
-    /// 3. Soporte de manipulación táctil (rotación y zoom) sobre la maqueta anclada.
-    /// 4. Calibración ergonómica hacia mesa o suelo.
+    /// 1. Muestra ÚNICAMENTE la retícula de puntos de escaneo de superficie antes de colocar.
+    /// 2. Oculta la maqueta 3D hasta que el usuario toca la pantalla para fijarla.
+    /// 3. Elimina llamadas duplicadas a la API nativa de Zappar para evitar saturación de memoria y congelamientos.
+    /// 4. Habilita manipulación táctil (rotación 360° y zoom) sobre la maqueta fijada.
     /// </summary>
     [RequireComponent(typeof(ZapparInstantTrackingTarget))]
     public class InstantTrackingController : MonoBehaviour
@@ -20,28 +20,26 @@ namespace ViMARA.AR
         public bool AllowTouchToggle = true;
         public KeyCode ResetKey = KeyCode.Space;
 
-        [Header("Posicionamiento Relativo (Mesa / Suelo)")]
-        [Tooltip("Distancia inicial frente a la cámara (en metros).")]
-        public float PreviewDistanceZ = -1.4f;
+        [Header("Calibración Ergonómica Inicial")]
+        public Vector3 SurfaceOffset = new Vector3(0, -0.45f, -1.4f);
 
-        [Tooltip("Desplazamiento vertical hacia abajo para proyectar sobre el escritorio.")]
-        public float PreviewOffsetY = -0.45f;
-
-        [Header("Visualizador de Superficie y Detección de Plano")]
+        [Header("Visualizador de Superficie (Dot Grid / Scanning Reticle)")]
         public bool ShowPlaneVisualizer = true;
-        public float ReticleRadius = 0.4f;
-        public Color ThemeColor = new Color(0.14f, 0.65f, 1.0f, 0.85f); // Azul cian / cielo AR
+        public float ReticleRadius = 0.45f;
+        public Color ThemeColor = new Color(0.14f, 0.65f, 1.0f, 0.9f);
 
-        // Componentes visuales procedurales
+        [Header("Referencia a la Maqueta / Modelo 3D")]
+        public Transform ModelContainer;
+
+        // Visualizadores procedurales
         private GameObject m_visualizerRoot;
         private LineRenderer m_outerRing;
         private LineRenderer m_innerRing;
         private LineRenderer m_crosshair;
-        private Material m_dotGridMaterial;
         private GameObject m_dotGridPlane;
-
-        // Referencia a la maqueta para habilitar manipulación táctil
-        private Transform m_modelTransform;
+        private Material m_ringMaterial;
+        private Material m_innerMaterial;
+        private Material m_dotGridMaterial;
 
         private void Awake()
         {
@@ -51,22 +49,32 @@ namespace ViMARA.AR
 
         private void Start()
         {
-            // Buscar la maqueta hija y añadirle soporte de rotación y zoom táctil
-            for (int i = 0; i < transform.childCount; i++)
+            FindAndSetupModel();
+            UpdateVisualState();
+        }
+
+        private void FindAndSetupModel()
+        {
+            if (ModelContainer == null)
             {
-                Transform child = transform.GetChild(i);
-                if (child != m_visualizerRoot?.transform)
+                for (int i = 0; i < transform.childCount; i++)
                 {
-                    m_modelTransform = child;
-                    if (child.GetComponent<TouchManipulationController>() == null)
+                    Transform child = transform.GetChild(i);
+                    if (child != m_visualizerRoot?.transform)
                     {
-                        child.gameObject.AddComponent<TouchManipulationController>();
+                        ModelContainer = child;
+                        break;
                     }
-                    break;
                 }
             }
 
-            UpdateVisualizerState();
+            if (ModelContainer != null)
+            {
+                if (ModelContainer.GetComponent<TouchManipulationController>() == null)
+                {
+                    ModelContainer.gameObject.AddComponent<TouchManipulationController>();
+                }
+            }
         }
 
         private void SetupSurfaceVisualizer()
@@ -82,53 +90,47 @@ namespace ViMARA.AR
             if (unlitShader == null) unlitShader = Shader.Find("Sprites/Default");
             if (unlitShader == null) unlitShader = Shader.Find("Unlit/Color");
 
-            Material ringMat = new Material(unlitShader);
-            ringMat.color = ThemeColor;
+            m_ringMaterial = new Material(unlitShader) { color = ThemeColor };
+            m_innerMaterial = new Material(unlitShader) { color = new Color(ThemeColor.r, ThemeColor.g, ThemeColor.b, 0.45f) };
 
-            // 1. Aro exterior principal
+            // 1. Aro exterior
             GameObject outerObj = new GameObject("OuterRing");
             outerObj.transform.SetParent(m_visualizerRoot.transform, false);
             m_outerRing = outerObj.AddComponent<LineRenderer>();
-            ConfigureLine(m_outerRing, ringMat, 0.015f, 48, ReticleRadius);
+            ConfigureLine(m_outerRing, m_ringMaterial, 0.015f, 48, ReticleRadius);
 
             // 2. Aro interior pulsante
             GameObject innerObj = new GameObject("InnerRing");
             innerObj.transform.SetParent(m_visualizerRoot.transform, false);
             m_innerRing = innerObj.AddComponent<LineRenderer>();
-            Color innerColor = new Color(ThemeColor.r, ThemeColor.g, ThemeColor.b, 0.45f);
-            Material innerMat = new Material(unlitShader) { color = innerColor };
-            ConfigureLine(m_innerRing, innerMat, 0.008f, 32, ReticleRadius * 0.5f);
+            ConfigureLine(m_innerRing, m_innerMaterial, 0.008f, 32, ReticleRadius * 0.5f);
 
-            // 3. Cruz central de alineación
+            // 3. Cruz central
             GameObject crosshairObj = new GameObject("Crosshair");
             crosshairObj.transform.SetParent(m_visualizerRoot.transform, false);
             m_crosshair = crosshairObj.AddComponent<LineRenderer>();
             m_crosshair.useWorldSpace = false;
             m_crosshair.startWidth = 0.01f;
             m_crosshair.endWidth = 0.01f;
-            m_crosshair.material = ringMat;
+            m_crosshair.material = m_ringMaterial;
             m_crosshair.positionCount = 5;
-            float ch = ReticleRadius * 0.25f;
+            float ch = ReticleRadius * 0.22f;
             m_crosshair.SetPositions(new Vector3[] {
                 new Vector3(-ch, 0, 0), new Vector3(ch, 0, 0),
                 Vector3.zero,
                 new Vector3(0, 0, -ch), new Vector3(0, 0, ch)
             });
 
-            // 4. Plano de puntos de escaneo de superficie (Dot Grid)
+            // 4. Matriz de puntos de escaneo de plano
             m_dotGridPlane = GameObject.CreatePrimitive(PrimitiveType.Quad);
             m_dotGridPlane.name = "ScanningDotGrid";
             m_dotGridPlane.transform.SetParent(m_visualizerRoot.transform, false);
             m_dotGridPlane.transform.localRotation = Quaternion.Euler(90f, 0, 0);
             m_dotGridPlane.transform.localScale = Vector3.one * (ReticleRadius * 2.2f);
-
-            // Destruir el collider innecesario
             Destroy(m_dotGridPlane.GetComponent<Collider>());
 
-            // Cargar textura de puntos si existe en el proyecto
             Texture2D dotTex = Resources.Load<Texture2D>("PlanePatternDot");
-            m_dotGridMaterial = new Material(unlitShader);
-            m_dotGridMaterial.color = new Color(ThemeColor.r, ThemeColor.g, ThemeColor.b, 0.25f);
+            m_dotGridMaterial = new Material(unlitShader) { color = new Color(ThemeColor.r, ThemeColor.g, ThemeColor.b, 0.35f) };
             if (dotTex != null)
             {
                 m_dotGridMaterial.mainTexture = dotTex;
@@ -152,11 +154,20 @@ namespace ViMARA.AR
             }
         }
 
-        private void UpdateVisualizerState()
+        private void UpdateVisualState()
         {
-            if (m_visualizerRoot != null && m_trackingTarget != null)
+            bool isPlaced = m_trackingTarget != null && m_trackingTarget.UserHasPlaced;
+
+            // Retícula de escaneo: activa SOLO cuando NO está fijado
+            if (m_visualizerRoot != null)
             {
-                m_visualizerRoot.SetActive(!m_trackingTarget.UserHasPlaced && ShowPlaneVisualizer);
+                m_visualizerRoot.SetActive(!isPlaced && ShowPlaneVisualizer);
+            }
+
+            // Maqueta 3D: activa SOLO cuando el usuario la ha FIJADO sobre el plano
+            if (ModelContainer != null)
+            {
+                ModelContainer.gameObject.SetActive(isPlaced);
             }
         }
 
@@ -166,26 +177,15 @@ namespace ViMARA.AR
 
             HandleInput();
 
-            // Modo Preview: proyectar anclaje y animar el escaneo
-            if (!m_trackingTarget.UserHasPlaced)
+            // Animación suave de la retícula de escaneo mientras busca superficie
+            if (m_visualizerRoot != null && m_visualizerRoot.activeSelf)
             {
-                Z.InstantWorldTrackerAnchorPoseSetFromCameraOffset(
-                    m_trackingTarget.InstantTracker.Value,
-                    0f, PreviewOffsetY, PreviewDistanceZ,
-                    Z.InstantTrackerTransformOrientation.MINUS_Z_HEADING
-                );
+                m_visualizerRoot.transform.Rotate(Vector3.up, 20f * Time.deltaTime, Space.Self);
 
-                // Animación de rotación del aro exterior
-                if (m_visualizerRoot != null && m_visualizerRoot.activeSelf)
+                float pulse = 0.8f + Mathf.PingPong(Time.time * 0.7f, 0.35f);
+                if (m_innerRing != null)
                 {
-                    m_visualizerRoot.transform.Rotate(Vector3.up, 20f * Time.deltaTime, Space.Self);
-
-                    // Efecto de pulso en el aro interior y la grilla
-                    float pulse = 0.8f + Mathf.PingPong(Time.time * 0.8f, 0.4f);
-                    if (m_innerRing != null)
-                    {
-                        m_innerRing.transform.localScale = new Vector3(pulse, 1f, pulse);
-                    }
+                    m_innerRing.transform.localScale = new Vector3(pulse, 1f, pulse);
                 }
             }
         }
@@ -196,21 +196,16 @@ namespace ViMARA.AR
 
             if (AllowTouchToggle)
             {
-                if (Input.touchCount > 0)
+                if (Input.touchCount == 1)
                 {
                     Touch touch = Input.GetTouch(0);
                     if (touch.phase == TouchPhase.Began)
                     {
-                        // Si hay 2 dedos, el usuario está haciendo zoom (ignorar fijado/desfijado)
-                        if (Input.touchCount == 1)
-                        {
-                            isClickOrTouchDown = true;
-                        }
+                        isClickOrTouchDown = true;
                     }
                 }
                 else if (Input.GetMouseButtonDown(0))
                 {
-                    // En desktop: shift + click o click simple cuando no se arrastra
                     isClickOrTouchDown = true;
                 }
             }
@@ -221,16 +216,15 @@ namespace ViMARA.AR
             {
                 if (!m_trackingTarget.UserHasPlaced)
                 {
+                    // Fijar anclaje sobre el plano detectado
                     m_trackingTarget.PlaceTrackerAnchor();
-                    UpdateVisualizerState();
-                    Debug.Log("[ViMARA AR] Plano detectado. Maqueta FIJADA sobre la superficie.");
+                    UpdateVisualState();
+                    Debug.Log("[ViMARA AR] Superficie seleccionada. Maqueta fijada.");
                 }
             }
             else if (isResetKeyPressed && m_trackingTarget.UserHasPlaced)
             {
-                m_trackingTarget.ResetTrackerAnchor();
-                UpdateVisualizerState();
-                Debug.Log("[ViMARA AR] Anclaje liberado para re-posicionar.");
+                ResetPlacement();
             }
         }
 
@@ -239,7 +233,8 @@ namespace ViMARA.AR
             if (m_trackingTarget != null)
             {
                 m_trackingTarget.ResetTrackerAnchor();
-                UpdateVisualizerState();
+                UpdateVisualState();
+                Debug.Log("[ViMARA AR] Anclaje liberado. Escaneando superficie...");
             }
         }
     }
