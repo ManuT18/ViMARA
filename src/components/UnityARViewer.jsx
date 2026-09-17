@@ -203,7 +203,7 @@ export default function UnityARViewer({ trackingMode = 'surface' }) {
       }}>
         <iframe
           ref={iframeRef}
-          src="/unity_ar/index.html"
+          src={`/unity_ar/index.html?mode=${trackingMode}`}
           title="ViMARA WebAR Viewport"
           allow="camera; accelerometer; gyroscope; microphone; fullscreen; xr-spatial-tracking"
           style={{

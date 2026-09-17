@@ -83,7 +83,45 @@ export default function ARVisualization() {
       </div>
 
       {/* Main 3D / WebAR View Component */}
-      <main style={{ width: '100%' }}>
+      <main style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {trackingMode === 'marker' && (
+          <div 
+            className="glass-panel" 
+            style={{ 
+              padding: '12px 18px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between', 
+              gap: '12px',
+              flexWrap: 'wrap',
+              background: 'rgba(14, 165, 233, 0.1)',
+              borderColor: 'rgba(56, 189, 248, 0.3)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: '240px' }}>
+              <Target size={20} color="var(--accent-primary, #38bdf8)" />
+              <span style={{ fontSize: '0.86rem', color: '#e0f2fe' }}>
+                Apunta con la cámara hacia el plano o abre el marcador en la pantalla de tu PC.
+              </span>
+            </div>
+            <a 
+              href="/markers/plano_arquitectura.svg" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="btn-primary"
+              style={{ 
+                padding: '6px 14px', 
+                fontSize: '0.8rem', 
+                height: '32px', 
+                textDecoration: 'none',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <span>Abrir Marcador en Pantalla ↗</span>
+            </a>
+          </div>
+        )}
+
         <UnityARViewer trackingMode={trackingMode} />
       </main>
 

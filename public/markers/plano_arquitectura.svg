@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800">
+  <!-- Blueprint Background -->
+  <rect width="1200" height="800" fill="#0f172a" />
+  
+  <!-- Subtle Blueprint Grid -->
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="1" />
+    </pattern>
+    <pattern id="fineGrid" width="10" height="10" patternUnits="userSpaceOnUse">
+      <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#1e293b" stroke-width="0.5" opacity="0.4" />
+    </pattern>
+  </defs>
+  <rect width="1200" height="800" fill="url(#fineGrid)" />
+  <rect width="1200" height="800" fill="url(#grid)" />
+
+  <!-- Outer Technical Border -->
+  <rect x="30" y="30" width="1140" height="740" fill="none" stroke="#38bdf8" stroke-width="3" />
+  <rect x="40" y="40" width="1120" height="720" fill="none" stroke="#0ea5e9" stroke-width="1" stroke-dasharray="8,4" />
+
+  <!-- High-contrast AR Corner Registration Targets (Fiducials) -->
+  <!-- Top Left -->
+  <rect x="55" y="55" width="60" height="60" fill="#38bdf8" />
+  <rect x="70" y="70" width="30" height="30" fill="#0f172a" />
+  <!-- Top Right -->
+  <rect x="1085" y="55" width="60" height="60" fill="#38bdf8" />
+  <rect x="1100" y="70" width="30" height="30" fill="#0f172a" />
+  <!-- Bottom Left -->
+  <rect x="55" y="685" width="60" height="60" fill="#38bdf8" />
+  <rect x="70" y="700" width="30" height="30" fill="#0f172a" />
+  <!-- Bottom Right -->
+  <rect x="1085" y="685" width="60" height="60" fill="#38bdf8" />
+  <rect x="1100" y="700" width="30" height="30" fill="#0f172a" />
+
+  <!-- Main Walls Outer Contour -->
+  <path d="M 180 140 L 780 140 L 780 620 L 180 620 Z" fill="#1e293b" stroke="#f8fafc" stroke-width="8" />
+
+  <!-- Interior Rooms Structure -->
+  <!-- Living / Comedor -->
+  <rect x="180" y="140" width="360" height="300" fill="#0284c7" fill-opacity="0.15" stroke="#f8fafc" stroke-width="6" />
+  <text x="360" y="270" fill="#38bdf8" font-family="Arial, sans-serif" font-size="22" font-weight="bold" text-anchor="middle">LIVING / COMEDOR</text>
+  <text x="360" y="300" fill="#94a3b8" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">S = 24.50 m² [Nivel +0.15]</text>
+
+  <!-- Cocina Integrada -->
+  <rect x="540" y="140" width="240" height="180" fill="#0369a1" fill-opacity="0.2" stroke="#f8fafc" stroke-width="6" />
+  <text x="660" y="220" fill="#38bdf8" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle">COCINA</text>
+  <text x="660" y="245" fill="#94a3b8" font-family="Arial, sans-serif" font-size="13" text-anchor="middle">S = 10.80 m²</text>
+  <!-- Kitchen Counter -->
+  <rect x="560" y="155" width="200" height="40" fill="none" stroke="#38bdf8" stroke-width="2" stroke-dasharray="4,4" />
+
+  <!-- Baño Principal -->
+  <rect x="540" y="320" width="240" height="120" fill="#0284c7" fill-opacity="0.1" stroke="#f8fafc" stroke-width="6" />
+  <text x="660" y="375" fill="#38bdf8" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle">BAÑO</text>
+  <text x="660" y="398" fill="#94a3b8" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">S = 5.20 m²</text>
+
+  <!-- Dormitorio Principal -->
+  <rect x="180" y="440" width="340" height="180" fill="#0284c7" fill-opacity="0.15" stroke="#f8fafc" stroke-width="6" />
+  <text x="350" y="525" fill="#38bdf8" font-family="Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle">DORMITORIO PPAL.</text>
+  <text x="350" y="555" fill="#94a3b8" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">S = 15.30 m²</text>
+
+  <!-- Dormitorio Secundario -->
+  <rect x="520" y="440" width="260" height="180" fill="#0369a1" fill-opacity="0.15" stroke="#f8fafc" stroke-width="6" />
+  <text x="650" y="525" fill="#38bdf8" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle">DORMITORIO 2</text>
+  <text x="650" y="555" fill="#94a3b8" font-family="Arial, sans-serif" font-size="13" text-anchor="middle">S = 11.70 m²</text>
+
+  <!-- Doors Swings -->
+  <path d="M 180 340 A 60 60 0 0 1 240 400" fill="none" stroke="#38bdf8" stroke-width="2" />
+  <line x1="180" y1="400" x2="240" y2="400" stroke="#f8fafc" stroke-width="3" />
+  
+  <path d="M 540 280 A 50 50 0 0 1 590 330" fill="none" stroke="#38bdf8" stroke-width="2" />
+  <line x1="540" y1="330" x2="590" y2="330" stroke="#f8fafc" stroke-width="3" />
+
+  <!-- Center AR Crosshair & Target Anchor -->
+  <circle cx="480" cy="380" r="45" fill="none" stroke="#38bdf8" stroke-width="3" stroke-dasharray="10,6" />
+  <circle cx="480" cy="380" r="12" fill="#38bdf8" />
+  <line x1="410" y1="380" x2="550" y2="380" stroke="#38bdf8" stroke-width="2" />
+  <line x1="480" y1="310" x2="480" y2="450" stroke="#38bdf8" stroke-width="2" />
+  <text x="480" y="480" fill="#f8fafc" font-family="Arial, sans-serif" font-size="13" font-weight="bold" text-anchor="middle">CENTRO DE MAQUETA 3D [ANCLAJE AR]</text>
+
+  <!-- Dimension Cotas Lines -->
+  <!-- Top Horizontal -->
+  <line x1="180" y1="105" x2="780" y2="105" stroke="#38bdf8" stroke-width="2" />
+  <line x1="180" y1="95" x2="180" y2="115" stroke="#38bdf8" stroke-width="2" />
+  <line x1="780" y1="95" x2="780" y2="115" stroke="#38bdf8" stroke-width="2" />
+  <text x="480" y="98" fill="#f8fafc" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle">10.00 m</text>
+
+  <!-- Left Vertical -->
+  <line x1="140" y1="140" x2="140" y2="620" stroke="#38bdf8" stroke-width="2" />
+  <line x1="130" y1="140" x2="150" y2="140" stroke="#38bdf8" stroke-width="2" />
+  <line x1="130" y1="620" x2="150" y2="620" stroke="#38bdf8" stroke-width="2" />
+  <text x="125" y="385" fill="#f8fafc" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" transform="rotate(-90 125 385)">8.00 m</text>
+
+  <!-- Right Title Block (Rótulo Profesional) -->
+  <rect x="820" y="140" width="310" height="480" fill="#1e293b" stroke="#38bdf8" stroke-width="2" />
+  <rect x="820" y="140" width="310" height="70" fill="#0284c7" />
+  <text x="975" y="180" fill="#ffffff" font-family="Arial, sans-serif" font-size="22" font-weight="bold" text-anchor="middle">PROYECTO ViMARA</text>
+  <text x="975" y="200" fill="#e0f2fe" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">Visualizador AR de Maquetas Arquitectónicas</text>
+
+  <!-- Title Block Fields -->
+  <line x1="820" y1="270" x2="1130" y2="270" stroke="#334155" stroke-width="2" />
+  <text x="840" y="240" fill="#94a3b8" font-family="Arial, sans-serif" font-size="12">PLANO DE PLANTA GENERAL</text>
+  <text x="840" y="260" fill="#f8fafc" font-family="Arial, sans-serif" font-size="16" font-weight="bold">Vivienda Unifamiliar Mod. A1</text>
+
+  <line x1="820" y1="340" x2="1130" y2="340" stroke="#334155" stroke-width="2" />
+  <text x="840" y="300" fill="#94a3b8" font-family="Arial, sans-serif" font-size="12">ESCALA &amp; ORIENTACIÓN</text>
+  <text x="840" y="325" fill="#f8fafc" font-family="Arial, sans-serif" font-size="16" font-weight="bold">Escala 1:50 · AR Target Tracking</text>
+
+  <line x1="820" y1="410" x2="1130" y2="410" stroke="#334155" stroke-width="2" />
+  <text x="840" y="370" fill="#94a3b8" font-family="Arial, sans-serif" font-size="12">UBICACIÓN DEL PROYECTO</text>
+  <text x="840" y="395" fill="#f8fafc" font-family="Arial, sans-serif" font-size="15" font-weight="bold">BENTRE25 / DCIC UNS</text>
+
+  <!-- North Arrow Indicator -->
+  <circle cx="975" cy="480" r="35" fill="none" stroke="#38bdf8" stroke-width="2" />
+  <polygon points="975,450 965,480 985,480" fill="#38bdf8" />
+  <polygon points="975,510 965,480 985,480" fill="#64748b" />
+  <text x="975" y="442" fill="#38bdf8" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle">N</text>
+
+  <!-- Instructions Footer in Title Block -->
+  <rect x="830" y="540" width="290" height="70" rx="8" fill="#0f172a" stroke="#0ea5e9" stroke-width="1" />
+  <text x="975" y="565" fill="#38bdf8" font-family="Arial, sans-serif" font-size="13" font-weight="bold" text-anchor="middle">MARCADOR AR ACTIVO</text>
+  <text x="975" y="585" fill="#94a3b8" font-family="Arial, sans-serif" font-size="11" text-anchor="middle">Apunta con la cámara de tu teléfono</text>
+  <text x="975" y="600" fill="#94a3b8" font-family="Arial, sans-serif" font-size="11" text-anchor="middle">directamente a este plano en pantalla</text>
+
+  <!-- Bottom Brand Status -->
+  <text x="600" y="750" fill="#64748b" font-family="Arial, sans-serif" font-size="13" text-anchor="middle">ViMARA WebAR Engine · Sistema de Reconocimiento y Seguimiento por Imagen Tridimensional</text>
+</svg>
