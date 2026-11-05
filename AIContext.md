@@ -6,29 +6,30 @@ ViMARA (Visualizador de Maquetas de Arquitectura en Realidad Aumentada) es una p
 ## Arquitectura y Decisiones
 - **Frontend Web**: React + Vite + React Router + Lucide Icons.
 - **Motor WebAR 3D**: Unity WebGL (URP) + Zappar Universal AR SDK (Soporte Dual: Instant World Tracking SLAM + Image Tracking con World Lock).
-- **Entorno de Despliegue**: Vercel con cabeceras de permisos de sensores (`camera`, `accelerometer`, `gyroscope`, `xr-spatial-tracking`) y tipos MIME configurados para WebAssembly y compresión de Unity.
-- **Flujo de Renderizado**: Carga asíncrona optimizada de Unity WebGL a través de iframe responsive (`UnityARViewer.jsx`) dentro de la vista `ARVisualization.jsx`.
-- **Rendimiento Térmico y Batería**: Limitación de render scale en móviles (`devicePixelRatio` cap a 1.35) y fotogramas limitados a 60 FPS (`Application.targetFrameRate = 60`) para evitar calentamiento de GPU.
+- **Cargador Universal de Modelos 3D (`RuntimeModelLoader.cs`)**:
+  - **Maquetas Procedurales Instantáneas** (`ProceduralSampleBuilder.cs`): Casa Moderna con Piscina (`preset:house`), Torre Residencial Urbana (`preset:tower`) y Pabellón de Exposición (`preset:pavilion`).
+  - **Archivos `.GLB` / `.GLTF`**: Carga asíncrona en tiempo de ejecución mediante **glTFast** (tanto desde URLs externas como desde `Blob URL` subidos desde el dispositivo del usuario).
+  - **Archivos `.OBJ` y `.STL` (ASCII/Binario)** (`RuntimeMeshFormats.cs`): Parser en tiempo de ejecución para mallas exportadas desde SketchUp, AutoCAD, Revit, Rhino o Blender, con conversión de ejes CAD a Unity y sombreado arquitectónico URP.
+  - **Normalización Automática**: Cálculo dinámico de `Bounds` para escalar proporcionalmente cualquier modelo a `0.45m` y apoyar su base exactamente sobre `Y = 0` (sobre el plano o marcador).
+- **Entorno de Despliegue**: Vercel con cabeceras de permisos de sensores (`camera`, `accelerometer`, `gyroscope`, `xr-spatial-tracking`) y compresión WebGL Gzip con Decompression Fallback.
+- **Flujo de Renderizado y Puente JS ↔ C#**: Carga asíncrona de Unity WebGL a través de iframe responsive (`UnityARViewer.jsx`) con paso de parámetros por URL (`?mode=...&model=...&format=...`) y cambio de modelo en caliente vía `postMessage` -> `SendMessage('AR Mode Switcher', 'LoadModelFromJS', payload)`.
 
 ## Tareas Completadas (Recientes)
 - [x] Configuración de Zappar Instant World Tracking con URP (`ZAPPAR_SRP`, camera depth -1, Overlay camera).
 - [x] Corrección de Input System dual en Unity (`activeInputHandler: 2`) para compatibilidad con eventos táctiles y teclado.
 - [x] Construcción y exportación de Unity WebGL a `public/unity_ar/` con soporte responsive 100vw/100vh.
-- [x] Integración de `UnityARViewer.jsx` en la ruta `/ar-view` de React.
+- [x] Integración de `UnityARViewer.jsx` en la ruta `/ar-view` de React con selector rápido de modelos en vivo.
 - [x] Implementación de Modo Pantalla Completa Real (inmersivo, con ocultación dinámica de Navbar y encabezados mediante clase `ar-fullscreen-active`).
 - [x] Soporte Dual de Tracking (Superficie vs Marcador `marcador_logo.zpt`) con conmutación dinámica de `AnchorOrigin` (`ARTrackingModeSwitcher.cs`).
 - [x] Anclaje Persistente y World-Lock en marcador de imagen (`PersistentMarkerController.cs`).
 - [x] Manipulación táctil interactiva: Rotación 360° con 1 dedo y Zoom / Escalado tipo pellizco con 2 dedos (`TouchManipulationController.cs`).
 - [x] Visualizador de escaneo de plano estilo ARKit con matriz de puntos y retícula animada (`InstantTrackingController.cs`).
-- [x] Herramienta de autoconfiguración de escena en Unity Editor (`ViMARA > Setup AR Scene`).
-- [x] Optimización de compilación rápida en Unity (`ViMARA > Fast WebGL Build (<30s)`).
-- [x] Corrección de casos límite de interacción UI (`EventSystem.current.IsPointerOverGameObject`) y eliminación de fugas de memoria en materiales procedurales.
-- [x] Despliegue sincronizado en repositorio remoto (`main`).
+- [x] Corrección de congelamiento de cámara en WebGL (`Application.targetFrameRate = -1`) y activación de compresión Gzip con Decompression Fallback.
+- [x] Implementación de carga dinámica multimodelo (`.glb`, `.gltf`, `.obj`, `.stl`) y catálogo de maquetas arquitectónicas de prueba (`RuntimeModelLoader.cs`, `ProceduralSampleBuilder.cs`, `RuntimeMeshFormats.cs`).
 
 ## Próximos Pasos (TODO)
-- [ ] Validar el anclaje persistente y los gestos táctiles en dispositivos móviles reales (iPhone y Android).
-- [ ] Implementar carga dinámica de modelos 3D (`.glb` / `.gltf`) en tiempo de ejecución con **glTFast**.
-- [ ] Normalización automática de escala y pivote para maquetas externas importadas por el usuario.
+- [ ] Ejecutar `ViMARA > Setup AR Scene` y compilar el nuevo Build WebGL en Unity para integrar el cargador de modelos en los binarios.
+- [ ] Validar en dispositivos móviles la carga de archivos `.glb`, `.stl` y `.obj` propios exportados por el usuario.
 
 ## Problemas Abiertos o Notas
 - En iOS Safari, asegurar que el usuario interactúe con la pantalla para conceder permisos de sensores de movimiento y orientación (`DeviceMotionEvent.requestPermission`).

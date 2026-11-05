@@ -1,10 +1,13 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Maximize2, Minimize2, RotateCcw, Camera } from 'lucide-react';
+import { Maximize2, Minimize2, RotateCcw, Camera, Box } from 'lucide-react';
+import { SAMPLES } from './SampleSelector';
+import { useApp } from '../context/useApp';
 
-export default function UnityARViewer({ trackingMode = 'surface' }) {
+export default function UnityARViewer({ trackingMode = 'surface', currentModel }) {
   const iframeRef = useRef(null);
   const containerRef = useRef(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const { setCurrentModel } = useApp();
 
   // Sincronizar estado si el usuario sale mediante gestos del navegador o tecla Escape
   const handleFullscreenChange = useCallback(() => {
@@ -48,13 +51,24 @@ export default function UnityARViewer({ trackingMode = 'surface' }) {
     };
   }, [isFullscreen]);
 
+  // Enviar modelo en vivo a Unity sin recargar el iframe cuando el usuario cambie de maqueta
+  useEffect(() => {
+    if (iframeRef.current && iframeRef.current.contentWindow && currentModel?.url) {
+      const format = currentModel.format || 'glb';
+      const payload = `${currentModel.url}|${format}`;
+      iframeRef.current.contentWindow.postMessage(
+        { type: 'LOAD_MODEL', payload },
+        '*'
+      );
+    }
+  }, [currentModel]);
+
   const toggleFullscreen = async () => {
     const container = containerRef.current;
     if (!container) return;
 
     if (!isFullscreen) {
       setIsFullscreen(true);
-      // Intentar activar API nativa si el navegador lo soporta (Android Chrome, Desktop)
       try {
         if (container.requestFullscreen) {
           await container.requestFullscreen();
@@ -66,7 +80,6 @@ export default function UnityARViewer({ trackingMode = 'surface' }) {
           await container.msRequestFullscreen();
         }
       } catch (err) {
-        // En iOS Safari el requestFullscreen en divs no está soportado, el modo CSS se encarga transparentemente
         console.log('[ViMARA] Modo pantalla completa virtual activado (CSS fallback).');
       }
     } else {
@@ -94,6 +107,13 @@ export default function UnityARViewer({ trackingMode = 'surface' }) {
       iframeRef.current.src = iframeRef.current.src;
     }
   };
+
+  // Construir URL inicial del iframe con modo y modelo codificados
+  const initialIframeSrc = useRef(
+    `/unity_ar/index.html?mode=${encodeURIComponent(trackingMode)}&model=${encodeURIComponent(
+      currentModel?.url || 'preset:house'
+    )}&format=${encodeURIComponent(currentModel?.format || 'preset')}`
+  );
 
   return (
     <div 
@@ -128,6 +148,8 @@ export default function UnityARViewer({ trackingMode = 'surface' }) {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '8px',
         padding: isFullscreen ? '12px 16px' : '0',
         position: isFullscreen ? 'absolute' : 'relative',
         top: 0,
@@ -140,7 +162,7 @@ export default function UnityARViewer({ trackingMode = 'surface' }) {
         <div style={{ 
           display: 'flex', 
           alignItems: 'center', 
-          gap: '6px', 
+          gap: '8px', 
           minWidth: 0,
           background: isFullscreen ? 'rgba(15, 23, 42, 0.75)' : 'transparent',
           padding: isFullscreen ? '6px 12px' : '0',
@@ -149,12 +171,46 @@ export default function UnityARViewer({ trackingMode = 'surface' }) {
           pointerEvents: 'auto'
         }}>
           <Camera size={18} color="var(--accent-primary, #3b82f6)" style={{ flexShrink: 0 }} />
-          <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            Modo {trackingMode === 'marker' ? 'Marcador' : 'Plano'}
+          <span style={{ fontSize: '0.85rem', fontWeight: '600', color: isFullscreen ? '#fff' : 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {currentModel?.name || `Modo ${trackingMode === 'marker' ? 'Marcador' : 'Plano'}`}
           </span>
         </div>
 
-        <div style={{ display: 'flex', gap: '6px', flexShrink: 0, pointerEvents: 'auto' }}>
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0, pointerEvents: 'auto' }}>
+          {/* Selector rápido de maqueta en vivo sin reiniciar cámara */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <Box size={14} style={{ position: 'absolute', left: '10px', pointerEvents: 'none', color: isFullscreen ? '#93c5fd' : 'var(--accent-primary)' }} />
+            <select
+              aria-label="Cambiar modelo 3D en vivo"
+              value={SAMPLES.some(s => s.id === currentModel?.id) ? currentModel.id : 'custom'}
+              onChange={(e) => {
+                const found = SAMPLES.find(s => s.id === e.target.value);
+                if (found) setCurrentModel(found);
+              }}
+              style={{
+                padding: '6px 10px 6px 28px',
+                fontSize: '0.78rem',
+                fontWeight: '600',
+                height: '34px',
+                borderRadius: '8px',
+                border: isFullscreen ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-light)',
+                background: isFullscreen ? 'rgba(15, 23, 42, 0.85)' : 'var(--bg-secondary)',
+                color: isFullscreen ? '#fff' : 'var(--text-primary)',
+                cursor: 'pointer',
+                maxWidth: '175px'
+              }}
+            >
+              {!SAMPLES.some(s => s.id === currentModel?.id) && currentModel && (
+                <option value="custom">📁 {currentModel.name}</option>
+              )}
+              {SAMPLES.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <button 
             className="btn-secondary" 
             onClick={reloadViewer}
@@ -207,7 +263,7 @@ export default function UnityARViewer({ trackingMode = 'surface' }) {
       }}>
         <iframe
           ref={iframeRef}
-          src={`/unity_ar/index.html?mode=${trackingMode}`}
+          src={initialIframeSrc.current}
           title="ViMARA WebAR Viewport"
           allow="camera; accelerometer; gyroscope; microphone; fullscreen; xr-spatial-tracking"
           style={{

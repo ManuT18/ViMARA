@@ -85,7 +85,7 @@ export default function ARVisualization() {
       {/* Main 3D / WebAR View Component */}
       <main style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-        <UnityARViewer trackingMode={trackingMode} />
+        <UnityARViewer trackingMode={trackingMode} currentModel={currentModel} />
       </main>
 
 

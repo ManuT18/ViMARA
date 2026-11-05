@@ -117,7 +117,9 @@ export default function ModelImport() {
                 <div>
                   <p style={{ fontWeight: '600', fontSize: '0.92rem' }}>{currentModel.name}</p>
                   <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                    Formato: <strong style={{ color: 'var(--accent-primary)' }}>{currentModel.format?.toUpperCase()}</strong>
+                    Tipo: <strong style={{ color: 'var(--accent-primary)' }}>
+                      {currentModel.format === 'preset' ? 'MAQUETA INTEGRADA 3D' : currentModel.format?.toUpperCase()}
+                    </strong>
                   </p>
                 </div>
               </div>

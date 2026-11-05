@@ -4,15 +4,20 @@ import { AppContext } from './AppContext';
 export function AppProvider({ children }) {
   const [trackingMode, setTrackingMode] = useState('plane'); // 'plane' | 'marker'
   const [currentModel, setCurrentModel] = useState({
-    id: 'sample-helmet',
-    name: 'Casco Futurista (PBR / Texturas)',
-    format: 'glb',
-    url: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb'
+    id: 'sample-house',
+    name: 'Casa Moderna con Piscina (Maqueta)',
+    format: 'preset',
+    url: 'preset:house'
   });
 
   const resetSelection = () => {
     setTrackingMode('plane');
-    setCurrentModel(null);
+    setCurrentModel({
+      id: 'sample-house',
+      name: 'Casa Moderna con Piscina (Maqueta)',
+      format: 'preset',
+      url: 'preset:house'
+    });
   };
 
   return (
