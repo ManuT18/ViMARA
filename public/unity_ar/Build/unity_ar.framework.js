@@ -20672,8 +20672,8 @@ var dynCall_iiifiifii = Module["dynCall_iiifiifii"] = createExportWrapper("dynCa
 var dynCall_iiiiiiffiiiiiiiiiffffiii = Module["dynCall_iiiiiiffiiiiiiiiiffffiii"] = createExportWrapper("dynCall_iiiiiiffiiiiiiiiiffffiii");
 /** @type {function(...*):?} */
 var dynCall_ijiff = Module["dynCall_ijiff"] = createExportWrapper("dynCall_ijiff");
-var ___start_em_js = Module['___start_em_js'] = 5137220;
-var ___stop_em_js = Module['___stop_em_js'] = 5137800;
+var ___start_em_js = Module['___start_em_js'] = 5137284;
+var ___stop_em_js = Module['___stop_em_js'] = 5137864;
 function invoke_ii(index,a1) {
   var sp = stackSave();
   try {

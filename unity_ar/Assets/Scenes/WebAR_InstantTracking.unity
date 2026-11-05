@@ -989,6 +989,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: NewAssembly::ViMARA.AR.RuntimeModelLoader
   SurfaceModelContainer: {fileID: 359664345}
   MarkerModelContainer: {fileID: 510392387}
+  BaseUrpMaterial: {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
   TargetNormalizedSize: 0.45
 --- !u!21 &1831254972
 Material:
