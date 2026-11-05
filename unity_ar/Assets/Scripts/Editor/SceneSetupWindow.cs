@@ -69,7 +69,6 @@ public class SceneSetupWindow : EditorWindow
             if (instantTarget != null)
             {
                 instantTarget.MoveAnchorOnZ = true;
-                instantTarget.m_placeOnTouch = false;
             }
             var instantCtrl = instantRoot.GetComponent<InstantTrackingController>();
             if (instantCtrl == null) instantCtrl = instantRoot.AddComponent<InstantTrackingController>();

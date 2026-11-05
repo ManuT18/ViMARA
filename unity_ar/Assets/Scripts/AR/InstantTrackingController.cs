@@ -69,7 +69,6 @@ namespace ViMARA.AR
                 // Z.InstantWorldTrackerAnchorPoseSetFromCameraOffset(..., MINUS_Z_AWAY_FROM_USER) cada frame,
                 // lo cual entraba en conflicto con nuestra llamada MINUS_Z_HEADING duplicando la carga en WASM.
                 m_trackingTarget.MoveAnchorOnZ = true;
-                m_trackingTarget.m_placeOnTouch = false;
             }
             SetupBoundedPlaneVisualizer();
         }
