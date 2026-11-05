@@ -26,7 +26,10 @@ namespace ViMARA.AR
         public float SmoothDamping = 12f;
 
         private float m_targetRotationY;
+        private float m_currentYawOffset;
         private Vector3 m_targetScale;
+        private Quaternion m_externalBaseRotation = Quaternion.identity;
+        private bool m_useExternalBaseRotation = false;
         private Vector2 m_lastTouchPos;
         private float m_lastPinchDistance;
         private bool m_isInteracting = false;
@@ -34,8 +37,20 @@ namespace ViMARA.AR
 
         private void Start()
         {
-            m_targetRotationY = transform.localEulerAngles.y;
+            m_targetRotationY = 0f;
+            m_currentYawOffset = 0f;
             m_targetScale = transform.localScale;
+        }
+
+        public void SetExternalBaseRotation(Quaternion baseWorldRot)
+        {
+            m_useExternalBaseRotation = true;
+            m_externalBaseRotation = baseWorldRot;
+        }
+
+        public void ClearExternalBaseRotation()
+        {
+            m_useExternalBaseRotation = false;
         }
 
         private void Update()
@@ -138,9 +153,17 @@ namespace ViMARA.AR
 
         private void ApplySmoothTransform()
         {
-            // Interpolación suave de rotación
-            Quaternion targetRotation = Quaternion.Euler(transform.localEulerAngles.x, m_targetRotationY, transform.localEulerAngles.z);
-            transform.localRotation = Quaternion.Slerp(transform.localRotation, targetRotation, Time.deltaTime * SmoothDamping);
+            m_currentYawOffset = Mathf.Lerp(m_currentYawOffset, m_targetRotationY, Time.deltaTime * SmoothDamping);
+
+            if (m_useExternalBaseRotation)
+            {
+                transform.rotation = m_externalBaseRotation * Quaternion.Euler(0f, m_currentYawOffset, 0f);
+            }
+            else
+            {
+                Quaternion targetRotation = Quaternion.Euler(0f, m_currentYawOffset, 0f);
+                transform.localRotation = Quaternion.Slerp(transform.localRotation, targetRotation, Time.deltaTime * SmoothDamping);
+            }
 
             // Interpolación suave de escala
             transform.localScale = Vector3.Lerp(transform.localScale, m_targetScale, Time.deltaTime * SmoothDamping);
@@ -149,8 +172,12 @@ namespace ViMARA.AR
         public void ResetTransformation(Vector3 defaultScale)
         {
             m_targetRotationY = 0f;
+            m_currentYawOffset = 0f;
             m_targetScale = defaultScale;
-            transform.localRotation = Quaternion.identity;
+            if (!m_useExternalBaseRotation)
+            {
+                transform.localRotation = Quaternion.identity;
+            }
             transform.localScale = defaultScale;
         }
     }

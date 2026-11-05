@@ -207,28 +207,6 @@
             setTimeout(WaitForZCVLoad, 500);
         }
 
-        var pendingModelPayload = null;
-        var pendingMode = null;
-
-        window.addEventListener("message", function (event) {
-            if (!event.data || typeof event.data !== "object") return;
-            if (event.data.type === "LOAD_MODEL" && event.data.payload) {
-                if (window.uarGameInstance) {
-                    window.uarGameInstance.SendMessage("AR Mode Switcher", "LoadModelFromJS", event.data.payload);
-                } else {
-                    pendingModelPayload = event.data.payload;
-                }
-            } else if (event.data.type === "SET_MODE" && event.data.mode) {
-                if (window.uarGameInstance) {
-                    window.uarGameInstance.SendMessage("AR Mode Switcher", "SetMode", event.data.mode);
-                } else {
-                    pendingMode = event.data.mode;
-                }
-            } else if (event.data.type === "RESIZE_VIEWPORT") {
-                window.dispatchEvent(new Event("resize"));
-            }
-        });
-
         function CreateUnityLoader() {
             createUnityInstance(canvas, config, (progress) => {
                 spinner.style.display = "none";
@@ -237,14 +215,6 @@
             }).then((unityInstance) => {
                 loadingCover.style.display = "none";
                 window.uarGameInstance = unityInstance;
-                if (pendingMode) {
-                    unityInstance.SendMessage("AR Mode Switcher", "SetMode", pendingMode);
-                    pendingMode = null;
-                }
-                if (pendingModelPayload) {
-                    unityInstance.SendMessage("AR Mode Switcher", "LoadModelFromJS", pendingModelPayload);
-                    pendingModelPayload = null;
-                }
             }).catch((message) => {
                 alert(message);
             });

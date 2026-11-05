@@ -40,7 +40,22 @@ public class SceneSetupWindow : EditorWindow
 
         var persistentCtrl = imageTrackerObj.GetComponent<PersistentMarkerController>();
         if (persistentCtrl == null) persistentCtrl = imageTrackerObj.AddComponent<PersistentMarkerController>();
-        persistentCtrl.ElevationOffset = 0.02f;
+        persistentCtrl.ElevationOffset = 0.01f;
+
+        // Ocultar Preview Object del marcador para que no se proyecte la imagen 2D del marcador en el visor
+        if (imageTarget.PreviewImageObject != null)
+        {
+            imageTarget.PreviewImageObject.SetActive(false);
+            var previewRenderer = imageTarget.PreviewImageObject.GetComponent<Renderer>();
+            if (previewRenderer != null) previewRenderer.enabled = false;
+        }
+        var previewChild = imageTrackerObj.transform.Find("Preview Object");
+        if (previewChild != null)
+        {
+            previewChild.gameObject.SetActive(false);
+            var previewRenderer = previewChild.GetComponent<Renderer>();
+            if (previewRenderer != null) previewRenderer.enabled = false;
+        }
 
         // 3. Vincular referencias en el Switcher
         var instantRoot = GameObject.Find("Zappar Instant Tracking Target");
