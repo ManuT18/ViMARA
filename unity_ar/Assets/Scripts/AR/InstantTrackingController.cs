@@ -76,9 +76,16 @@ namespace ViMARA.AR
 
         private void OnEnable()
         {
-            if (m_trackingTarget != null && m_trackingTarget.InstantTracker != null)
+            if (m_trackingTarget != null)
             {
-                Z.InstantWorldTrackerEnabledSet(m_trackingTarget.InstantTracker.Value, true);
+                if (m_trackingTarget.InstantTracker != null)
+                {
+                    Z.InstantWorldTrackerEnabledSet(m_trackingTarget.InstantTracker.Value, true);
+                }
+                else if (ZapparCamera.Instance != null && ZapparCamera.Instance.PipelineIsInitialized)
+                {
+                    m_trackingTarget.OnZapparInitialized(ZapparCamera.Instance.GetPipeline);
+                }
             }
         }
 

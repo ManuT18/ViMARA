@@ -211,9 +211,9 @@ namespace ViMARA.AR
                 {
                     ImageTrackingRoot.SetActive(true);
                     var imageTarget = ImageTrackingRoot.GetComponent<ZapparImageTrackingTarget>();
-                    if (imageTarget != null && imageTarget.ImageTracker != null)
+                    if (imageTarget != null && imageTarget.ImageTrackerPtr != null)
                     {
-                        Z.ImageTrackerEnabledSet(imageTarget.ImageTracker.Value, true);
+                        Z.ImageTrackerEnabledSet(imageTarget.ImageTrackerPtr.Value, true);
                     }
 
                     if (ZapparCamera.Instance != null)
@@ -228,9 +228,9 @@ namespace ViMARA.AR
                 if (ImageTrackingRoot != null)
                 {
                     var imageTarget = ImageTrackingRoot.GetComponent<ZapparImageTrackingTarget>();
-                    if (imageTarget != null && imageTarget.ImageTracker != null)
+                    if (imageTarget != null && imageTarget.ImageTrackerPtr != null)
                     {
-                        Z.ImageTrackerEnabledSet(imageTarget.ImageTracker.Value, false);
+                        Z.ImageTrackerEnabledSet(imageTarget.ImageTrackerPtr.Value, false);
                     }
                     ImageTrackingRoot.SetActive(false);
                 }
