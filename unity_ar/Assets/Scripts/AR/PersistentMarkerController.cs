@@ -167,7 +167,6 @@ namespace ViMARA.AR
                     TargetModel.rotation = m_lastValidWorldRot;
                     TargetModel.gameObject.SetActive(true);
                 }
-                Debug.Log("[ViMARA AR] Marcador detectado por primera vez. Maqueta anclada y estabilizada.");
             }
         }
 
@@ -176,7 +175,6 @@ namespace ViMARA.AR
             m_isCurrentlySeen = false;
             m_seenStableFrames = 0;
             // IMPORTANTE: NO desactivamos TargetModel. Permanece fijo en m_lastValidWorldPos (World Lock).
-            Debug.Log("[ViMARA AR] Marcador fuera de cuadro: Maqueta fijada en el espacio 3D (World Lock activo).");
         }
 
         private void ComputeDesiredWorldPose(out Vector3 desiredPos, out Quaternion desiredRot)

@@ -30,12 +30,10 @@ namespace ViMARA.AR
         private TrackingMode m_currentMode;
         private RuntimeModelLoader m_modelLoader;
         private string m_initialModelPayload;
-        private float m_nextGcMaintenanceTime = 20f;
 
         private void Awake()
         {
-            // En WebGL, usar 30 FPS estables sincronizados con la tasa real de captura de la cámara móvil (30fps)
-            // evita saturar el hilo único de WebAssembly y el decodificador de video HTML5.
+            Input.simulateMouseWithTouches = false;
             Application.targetFrameRate = -1;
 
             m_modelLoader = GetComponent<RuntimeModelLoader>();
@@ -74,17 +72,6 @@ namespace ViMARA.AR
             {
                 // Si no se especificó modelo en la URL, cargar por defecto la Casa Moderna en lugar del cubo básico
                 m_modelLoader.LoadModelFromPayload("preset:house|preset");
-            }
-        }
-
-        private void Update()
-        {
-            // Mantenimiento periódico ligero de memoria para recolectar los arrays float[16] temporales
-            // que el wrapper Z.cs del SDK de Zappar aloja en cada frame, evitando pausas largas o bloqueos.
-            if (Time.unscaledTime >= m_nextGcMaintenanceTime)
-            {
-                m_nextGcMaintenanceTime = Time.unscaledTime + 20f;
-                GC.Collect(0, GCCollectionMode.Optimized, false);
             }
         }
 

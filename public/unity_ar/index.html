@@ -179,54 +179,8 @@
 
         window.zappar = ZCV.initialize();
 
-        // Blindaje de estabilidad del pipeline WebGL/WASM de Zappar y Watchdog del stream de cámara
-        (function installZapparStabilityGuard(z) {
-            if (!z) return;
-
-            var lastProcessTime = 0;
-            var minProcessIntervalMs = 28; // ~35 FPS máx para visión por computadora (la cámara entrega 30 FPS)
-
-            if (typeof z.pipeline_process_gl === "function") {
-                var origProcessGl = z.pipeline_process_gl.bind(z);
-                z.pipeline_process_gl = function (pipeline) {
-                    var now = performance.now();
-                    if (now - lastProcessTime < minProcessIntervalMs) {
-                        return 0;
-                    }
-                    lastProcessTime = now;
-                    try {
-                        return origProcessGl(pipeline);
-                    } catch (err) {
-                        console.warn("[ViMARA AR] Recuperación automática en pipeline_process_gl:", err);
-                        return 0;
-                    }
-                };
-            }
-
-            if (typeof z.pipeline_camera_frame_upload_gl === "function") {
-                var origUploadGl = z.pipeline_camera_frame_upload_gl.bind(z);
-                z.pipeline_camera_frame_upload_gl = function (pipeline) {
-                    try {
-                        return origUploadGl(pipeline);
-                    } catch (err) {
-                        console.warn("[ViMARA AR] Recuperación automática en pipeline_camera_frame_upload_gl:", err);
-                        return 0;
-                    }
-                };
-            }
-
-            if (typeof z.pipeline_frame_update === "function") {
-                var origFrameUpdate = z.pipeline_frame_update.bind(z);
-                z.pipeline_frame_update = function (pipeline) {
-                    try {
-                        return origFrameUpdate(pipeline);
-                    } catch (err) {
-                        console.warn("[ViMARA AR] Recuperación automática en pipeline_frame_update:", err);
-                        return 0;
-                    }
-                };
-            }
-
+        // Watchdog del elemento <video> de la cámara móvil para evitar que iOS/Android pausen el stream
+        (function installCameraVideoWatchdog() {
             function ensureCameraVideosPlaying() {
                 if (document.visibilityState && document.visibilityState !== "visible") return;
                 var videos = document.getElementsByTagName("video");
@@ -241,12 +195,12 @@
                 }
             }
 
-            setInterval(ensureCameraVideosPlaying, 1200);
+            setInterval(ensureCameraVideosPlaying, 1500);
             document.addEventListener("visibilitychange", ensureCameraVideosPlaying);
             window.addEventListener("focus", ensureCameraVideosPlaying);
             window.addEventListener("pageshow", ensureCameraVideosPlaying);
             window.addEventListener("touchstart", ensureCameraVideosPlaying, { passive: true });
-        })(window.zappar);
+        })();
 
         const script = document.createElement("script");
         script.src = loaderUrl;
