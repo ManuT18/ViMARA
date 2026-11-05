@@ -1,0 +1,18 @@
+{
+  "name": "ViMARA - Visualizador de Maquetas AR",
+  "short_name": "ViMARA",
+  "description": "Visualizador de Maquetas de Arquitectura en Realidad Aumentada",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

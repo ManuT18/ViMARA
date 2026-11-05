@@ -738,6 +738,18 @@ button, input, select, textarea, a, .touch-target {
 }
 
 /* Modo Pantalla Completa Real WebAR (Oculta Navbar y Barras superiores) */
+html:has(body.ar-fullscreen-active),
+body.ar-fullscreen-active {
+  overflow: hidden !important;
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  background: #000 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 body.ar-fullscreen-active .navbar-container,
 body.ar-fullscreen-active .page-top-bar {
   display: none !important;

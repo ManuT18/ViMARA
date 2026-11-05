@@ -1,24 +1,31 @@
-import React, { useRef } from 'react';
-import { UploadCloud, CheckCircle2 } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { UploadCloud, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function FileUploader({ onFileSelect, activeFileName }) {
   const fileInputRef = useRef(null);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const extension = file.name.split('.').pop().toLowerCase();
-      if (['glb', 'gltf', 'stl', 'obj'].includes(extension)) {
-        const objectUrl = URL.createObjectURL(file);
-        onFileSelect({
-          name: file.name,
-          url: objectUrl,
-          format: extension
-        });
-      } else {
-        alert('Por favor selecciona un archivo con extensión .glb, .stl u .obj (exportado de SketchUp)');
-      }
+    setErrorMsg('');
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const parts = file.name.split('.');
+    const extension = parts.length > 1 ? parts.pop().toLowerCase().trim() : '';
+
+    if (['glb', 'gltf', 'stl', 'obj'].includes(extension)) {
+      const objectUrl = URL.createObjectURL(file);
+      onFileSelect({
+        name: file.name,
+        url: objectUrl,
+        format: extension
+      });
+    } else {
+      setErrorMsg(`El archivo "${file.name}" no tiene un formato 3D compatible. Selecciona un archivo .GLB, .GLTF, .STL u .OBJ.`);
     }
+
+    // Permitir volver a seleccionar el mismo archivo si el usuario lo desea
+    e.target.value = '';
   };
 
   return (
@@ -62,7 +69,7 @@ export default function FileUploader({ onFileSelect, activeFileName }) {
             Toca aquí para seleccionar tu archivo 3D
           </p>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.4 }}>
-            Formatos admitidos: <strong style={{ color: 'var(--text-secondary)' }}>.GLB</strong> (Recomendado), <strong>.STL</strong>, <strong>.OBJ</strong>
+            Formatos admitidos: <strong style={{ color: 'var(--text-secondary)' }}>.GLB</strong>, <strong>.STL</strong>, <strong>.OBJ</strong>, <strong>.GLTF</strong>
           </p>
         </div>
 
@@ -86,10 +93,30 @@ export default function FileUploader({ onFileSelect, activeFileName }) {
           </div>
         )}
 
+        {errorMsg && (
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginTop: '6px',
+            padding: '8px 14px',
+            borderRadius: 'var(--radius-md)',
+            background: 'rgba(239, 68, 68, 0.1)',
+            color: '#dc2626',
+            fontSize: '0.8rem',
+            fontWeight: '600',
+            border: '1px solid rgba(239, 68, 68, 0.3)'
+          }}>
+            <AlertCircle size={16} />
+            <span>{errorMsg}</span>
+          </div>
+        )}
+
+        {/* IMPORTANTE PARA iOS / iPhone: No usar accept=".stl,.obj,.glb" porque iOS Safari 
+            carece de mapeo UTI para .stl/.glb y los deshabilita (en gris) en la app Archivos. */}
         <input 
           ref={fileInputRef}
           type="file" 
-          accept=".glb,.gltf,.stl,.obj" 
           style={{ display: 'none' }}
           onChange={handleFileChange}
         />
