@@ -11,7 +11,7 @@ public class SceneSetupWindow : EditorWindow
     {
         var scene = EditorSceneManager.GetActiveScene();
         
-        // 1. Asegurar ARTrackingModeSwitcher
+        // 1. Asegurar ARTrackingModeSwitcher y RuntimeModelLoader
         var switcherObj = GameObject.Find("AR Mode Switcher");
         if (switcherObj == null)
         {
@@ -19,6 +19,9 @@ public class SceneSetupWindow : EditorWindow
         }
         var switcher = switcherObj.GetComponent<ARTrackingModeSwitcher>();
         if (switcher == null) switcher = switcherObj.AddComponent<ARTrackingModeSwitcher>();
+
+        var modelLoader = switcherObj.GetComponent<RuntimeModelLoader>();
+        if (modelLoader == null) modelLoader = switcherObj.AddComponent<RuntimeModelLoader>();
 
         // 2. Asegurar Zappar Image Tracking Target con PersistentMarkerController
         var imageTrackerObj = GameObject.Find("Zappar Image Tracking Target");
@@ -34,7 +37,7 @@ public class SceneSetupWindow : EditorWindow
 
         var persistentCtrl = imageTrackerObj.GetComponent<PersistentMarkerController>();
         if (persistentCtrl == null) persistentCtrl = imageTrackerObj.AddComponent<PersistentMarkerController>();
-        persistentCtrl.ElevationOffset = 0.15f;
+        persistentCtrl.ElevationOffset = 0.02f;
 
         // 3. Vincular referencias en el Switcher
         var instantRoot = GameObject.Find("Zappar Instant Tracking Target");
@@ -49,52 +52,54 @@ public class SceneSetupWindow : EditorWindow
             instantCtrl.ShowPlaneVisualizer = true;
         }
 
-        // 5. Configurar Cubo de Instant Tracking con elevación ergonómica y manipulación táctil
+        // 5. Configurar Contenedor de Modelo de Instant Tracking
         var instantCube = GameObject.Find("Cube");
         if (instantCube != null)
         {
-            instantCube.transform.localPosition = new Vector3(0, 0.15f, 0);
-            instantCube.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
+            instantCube.transform.localPosition = Vector3.zero;
+            instantCube.transform.localScale = Vector3.one;
             if (instantCube.GetComponent<TouchManipulationController>() == null)
             {
                 instantCube.AddComponent<TouchManipulationController>();
             }
 
-            // Vincular al InstantTrackingController
             if (instantRoot != null)
             {
                 var instantCtrl = instantRoot.GetComponent<InstantTrackingController>();
                 if (instantCtrl != null) instantCtrl.ModelContainer = instantCube.transform;
             }
+            modelLoader.SurfaceModelContainer = instantCube.transform;
         }
 
-        // 6. Configurar Cubo dentro de Image Tracking Target
+        // 6. Configurar Contenedor de Modelo dentro de Image Tracking Target
         var existingCubeInTarget = imageTrackerObj.transform.Find("Cube_ImageTarget");
         if (existingCubeInTarget == null && instantCube != null)
         {
             var newCube = Instantiate(instantCube, imageTrackerObj.transform);
             newCube.name = "Cube_ImageTarget";
-            newCube.transform.localPosition = new Vector3(0, 0.15f, 0);
-            newCube.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
+            newCube.transform.localPosition = Vector3.zero;
+            newCube.transform.localScale = Vector3.one;
             if (newCube.GetComponent<TouchManipulationController>() == null)
             {
                 newCube.AddComponent<TouchManipulationController>();
             }
             persistentCtrl.TargetModel = newCube.transform;
+            modelLoader.MarkerModelContainer = newCube.transform;
         }
         else if (existingCubeInTarget != null)
         {
-            existingCubeInTarget.localPosition = new Vector3(0, 0.15f, 0);
-            existingCubeInTarget.localScale = new Vector3(0.3f, 0.3f, 0.3f);
+            existingCubeInTarget.localPosition = Vector3.zero;
+            existingCubeInTarget.localScale = Vector3.one;
             if (existingCubeInTarget.GetComponent<TouchManipulationController>() == null)
             {
                 existingCubeInTarget.gameObject.AddComponent<TouchManipulationController>();
             }
             persistentCtrl.TargetModel = existingCubeInTarget;
+            modelLoader.MarkerModelContainer = existingCubeInTarget;
         }
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
-        Debug.Log("[ViMARA] Escena AR reconfigurada exitosamente con Retícula de Escaneo, Anclaje Persistente y Prevención de Congelamientos.");
+        Debug.Log("[ViMARA] Escena AR configurada con RuntimeModelLoader (GLB/GLTF/OBJ/STL + Maquetas de Prueba).");
     }
 }

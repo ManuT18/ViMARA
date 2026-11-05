@@ -1,12 +1,13 @@
 using System;
 using UnityEngine;
+using UnityEngine.Networking;
 using Zappar;
 
 namespace ViMARA.AR
 {
     /// <summary>
-    /// Gestiona el modo activo de Realidad Aumentada (Superficie vs Marcador).
-    /// Configura dinámicamente ZapparCamera, optimiza el consumo térmico y coordina el anclaje.
+    /// Gestiona el modo activo de Realidad Aumentada (Superficie vs Marcador)
+    /// y coordina la carga del modelo 3D seleccionado desde la URL o desde mensajes de React.
     /// </summary>
     public class ARTrackingModeSwitcher : MonoBehaviour
     {
@@ -27,28 +28,72 @@ namespace ViMARA.AR
         }
 
         private TrackingMode m_currentMode;
+        private RuntimeModelLoader m_modelLoader;
+        private string m_initialModelPayload;
 
         private void Awake()
         {
-            // IMPORTANT: In WebGL, forcing targetFrameRate can cause spin-loops that starve the browser's 
-            // video decoding thread, causing the AR camera feed to freeze after a few minutes. 
-            // We set it to -1 to let the browser natively sync via requestAnimationFrame.
+            // En WebGL, dejar que el navegador gestione los fotogramas vía requestAnimationFrame (-1)
+            // evita bloqueos en el hilo de decodificación de video de la cámara.
             Application.targetFrameRate = -1;
 
-            DetectModeFromURL();
+            m_modelLoader = GetComponent<RuntimeModelLoader>();
+            if (m_modelLoader == null)
+            {
+                m_modelLoader = gameObject.AddComponent<RuntimeModelLoader>();
+            }
+
+            ParseParametersFromURL();
         }
 
         private void Start()
         {
+            ResolveModelContainers();
             ApplyTrackingMode(m_currentMode);
+
+            if (!string.IsNullOrEmpty(m_initialModelPayload))
+            {
+                m_modelLoader.LoadModelFromPayload(m_initialModelPayload);
+            }
+            else
+            {
+                // Si no se especificó modelo en la URL, cargar por defecto la Casa Moderna en lugar del cubo básico
+                m_modelLoader.LoadModelFromPayload("preset:house|preset");
+            }
         }
 
-        private void DetectModeFromURL()
+        private void ResolveModelContainers()
+        {
+            Transform surfaceContainer = null;
+            Transform markerContainer = null;
+
+            if (InstantTrackingRoot != null)
+            {
+                var instantCtrl = InstantTrackingRoot.GetComponent<InstantTrackingController>();
+                if (instantCtrl != null) surfaceContainer = instantCtrl.ModelContainer;
+            }
+
+            if (ImageTrackingRoot != null)
+            {
+                var markerCtrl = ImageTrackingRoot.GetComponent<PersistentMarkerController>();
+                if (markerCtrl != null) markerContainer = markerCtrl.TargetModel;
+            }
+
+            m_modelLoader.InitializeContainers(surfaceContainer, markerContainer);
+        }
+
+        private void ParseParametersFromURL()
         {
             string url = Application.absoluteURL;
             Debug.Log($"[ViMARA AR] URL del visor: {url}");
 
-            if (!string.IsNullOrEmpty(url) && url.IndexOf("mode=marker", StringComparison.OrdinalIgnoreCase) >= 0)
+            if (string.IsNullOrEmpty(url))
+            {
+                m_currentMode = DefaultMode;
+                return;
+            }
+
+            if (url.IndexOf("mode=marker", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 m_currentMode = TrackingMode.Marker;
                 Debug.Log("[ViMARA AR] Modo activo: SEGUIMIENTO POR MARCADOR (World Lock).");
@@ -57,6 +102,54 @@ namespace ViMARA.AR
             {
                 m_currentMode = TrackingMode.Surface;
                 Debug.Log("[ViMARA AR] Modo activo: SEGUIMIENTO POR SUPERFICIE (Plano).");
+            }
+
+            string modelParam = GetQueryParam(url, "model");
+            string formatParam = GetQueryParam(url, "format");
+
+            if (!string.IsNullOrEmpty(modelParam))
+            {
+                m_initialModelPayload = !string.IsNullOrEmpty(formatParam)
+                    ? $"{modelParam}|{formatParam}"
+                    : modelParam;
+            }
+        }
+
+        private string GetQueryParam(string fullUrl, string key)
+        {
+            int qIndex = fullUrl.IndexOf('?');
+            if (qIndex < 0 || qIndex + 1 >= fullUrl.Length) return null;
+
+            string query = fullUrl.Substring(qIndex + 1);
+            int hashIndex = query.IndexOf('#');
+            if (hashIndex >= 0) query = query.Substring(0, hashIndex);
+
+            string[] pairs = query.Split('&');
+            foreach (string pair in pairs)
+            {
+                int eqIdx = pair.IndexOf('=');
+                if (eqIdx > 0)
+                {
+                    string k = pair.Substring(0, eqIdx);
+                    if (string.Equals(k, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        string val = pair.Substring(eqIdx + 1);
+                        return UnityWebRequest.UnEscapeURL(val);
+                    }
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Llamado desde JavaScript mediante unityInstance.SendMessage('AR Mode Switcher', 'LoadModelFromJS', payload)
+        /// </summary>
+        public void LoadModelFromJS(string payload)
+        {
+            if (m_modelLoader != null)
+            {
+                ResolveModelContainers();
+                m_modelLoader.LoadModelFromPayload(payload);
             }
         }
 
@@ -84,7 +177,6 @@ namespace ViMARA.AR
                     ImageTrackingRoot.SetActive(true);
                     if (ZapparCamera.Instance != null)
                     {
-                        // En modo marcador con World-Lock, la cámara utiliza el giroscopio para mirar alrededor
                         ZapparCamera.Instance.AnchorOrigin = null;
                         ZapparCamera.Instance.CameraAttitudeFromGyro = true;
                     }

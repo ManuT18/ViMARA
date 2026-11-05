@@ -1,7 +1,7 @@
 {
 	"name": "NewAssembly",
 	"references": [
-		"Zappar.UAR"
+		"Zappar.UAR",
+		"glTFast"
 	]
 }
-
