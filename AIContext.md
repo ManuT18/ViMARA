@@ -25,7 +25,9 @@ ViMARA (Visualizador de Maquetas de Arquitectura en Realidad Aumentada) es una p
 - [x] Manipulación táctil interactiva: Rotación 360° con 1 dedo y Zoom / Escalado tipo pellizco con 2 dedos (`TouchManipulationController.cs`).
 - [x] Visualizador de escaneo de plano estilo ARKit con matriz de puntos y retícula animada (`InstantTrackingController.cs`).
 - [x] Corrección de congelamiento de cámara en WebGL (`Application.targetFrameRate = -1`) y activación de compresión Gzip con Decompression Fallback.
-- [x] Implementación de carga dinámica multimodelo (`.glb`, `.gltf`, `.obj`, `.stl`) y catálogo de maquetas arquitectónicas de prueba (`RuntimeModelLoader.cs`, `ProceduralSampleBuilder.cs`, `RuntimeMeshFormats.cs`).
+- [x] Implementación de carga dinámica multimodelo (`.glb`, `.gltf`, `.obj`, `.stl`), reparación de materiales URP para modelos `.glb` texturizados, y catálogo de maquetas arquitectónicas de prueba (`RuntimeModelLoader.cs`, `ProceduralSampleBuilder.cs`, `RuntimeMeshFormats.cs`).
+- [x] Mejora de estabilidad de pose (filtro Deadzone + nivelación por gravedad en `LateUpdate`), ocultación del `Preview Object` 2D del marcador en modo Marcador (`PersistentMarkerController.cs`), y nuevo delimitador arquitectónico de planos horizontales y verticales (`InstantTrackingController.cs`).
+- [x] Blindaje contra congelamiento del visor/cámara tras varios minutos de uso: desactivación explícita del tracker nativo C++/WASM inactivo (`Z.InstantWorldTrackerEnabledSet` / `Z.ImageTrackerEnabledSet`), eliminación de doble llamada SLAM por frame (`MoveAnchorOnZ = true`), límite de `devicePixelRatio <= 1.25` en móviles, compuerta CV a ~30fps y watchdog de auto-reanudación del `<video>` HTML5 en `index.html`.
 
 ## Próximos Pasos (TODO)
 - [ ] Ejecutar `ViMARA > Setup AR Scene` y compilar el nuevo Build WebGL en Unity para integrar el cargador de modelos en los binarios.

@@ -181,9 +181,9 @@
 
         if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
             container.className = "unity-mobile";
-            //config.matchWebGLToCanvasSize = false;    
-            //set devicePixelRatio=1; to avoid draining fillrate performance on mobile and override low DPI mode
-            config.devicePixelRatio = window.devicePixelRatio;
+            // Limitar devicePixelRatio en móviles evita saturar la VRAM y el ancho de banda WebGL
+            // (en pantallas 3x Retina reduce 80% la carga de sombreado sin pérdida visual perceptible).
+            config.devicePixelRatio = Math.min(window.devicePixelRatio || 1, 1.25);
         }
 #if BACKGROUND_FILENAME
         canvas.style.background = "url('" + buildUrl + "/{{{ BACKGROUND_FILENAME.replace(/'/g, '%27') }}}') center / cover";
@@ -191,6 +191,75 @@
         loadingCover.style.display = "";
 
         window.zappar = ZCV.initialize();
+
+        // Blindaje de estabilidad del pipeline WebGL/WASM de Zappar y Watchdog del stream de cámara
+        (function installZapparStabilityGuard(z) {
+            if (!z) return;
+
+            var lastProcessTime = 0;
+            var minProcessIntervalMs = 28; // ~35 FPS máx para visión por computadora (la cámara entrega 30 FPS)
+
+            if (typeof z.pipeline_process_gl === "function") {
+                var origProcessGl = z.pipeline_process_gl.bind(z);
+                z.pipeline_process_gl = function (pipeline) {
+                    var now = performance.now();
+                    if (now - lastProcessTime < minProcessIntervalMs) {
+                        return 0;
+                    }
+                    lastProcessTime = now;
+                    try {
+                        return origProcessGl(pipeline);
+                    } catch (err) {
+                        console.warn("[ViMARA AR] Recuperación automática en pipeline_process_gl:", err);
+                        return 0;
+                    }
+                };
+            }
+
+            if (typeof z.pipeline_camera_frame_upload_gl === "function") {
+                var origUploadGl = z.pipeline_camera_frame_upload_gl.bind(z);
+                z.pipeline_camera_frame_upload_gl = function (pipeline) {
+                    try {
+                        return origUploadGl(pipeline);
+                    } catch (err) {
+                        console.warn("[ViMARA AR] Recuperación automática en pipeline_camera_frame_upload_gl:", err);
+                        return 0;
+                    }
+                };
+            }
+
+            if (typeof z.pipeline_frame_update === "function") {
+                var origFrameUpdate = z.pipeline_frame_update.bind(z);
+                z.pipeline_frame_update = function (pipeline) {
+                    try {
+                        return origFrameUpdate(pipeline);
+                    } catch (err) {
+                        console.warn("[ViMARA AR] Recuperación automática en pipeline_frame_update:", err);
+                        return 0;
+                    }
+                };
+            }
+
+            function ensureCameraVideosPlaying() {
+                if (document.visibilityState && document.visibilityState !== "visible") return;
+                var videos = document.getElementsByTagName("video");
+                for (var i = 0; i < videos.length; i++) {
+                    var v = videos[i];
+                    v.playsInline = true;
+                    v.muted = true;
+                    if (!v.hasAttribute("playsinline")) v.setAttribute("playsinline", "");
+                    if (v.paused && v.srcObject) {
+                        v.play().catch(function () {});
+                    }
+                }
+            }
+
+            setInterval(ensureCameraVideosPlaying, 1200);
+            document.addEventListener("visibilitychange", ensureCameraVideosPlaying);
+            window.addEventListener("focus", ensureCameraVideosPlaying);
+            window.addEventListener("pageshow", ensureCameraVideosPlaying);
+            window.addEventListener("touchstart", ensureCameraVideosPlaying, { passive: true });
+        })(window.zappar);
 
         const script = document.createElement("script");
         script.src = loaderUrl;
@@ -207,6 +276,28 @@
             setTimeout(WaitForZCVLoad, 500);
         }
 
+        var pendingModelPayload = null;
+        var pendingMode = null;
+
+        window.addEventListener("message", function (event) {
+            if (!event.data || typeof event.data !== "object") return;
+            if (event.data.type === "LOAD_MODEL" && event.data.payload) {
+                if (window.uarGameInstance) {
+                    window.uarGameInstance.SendMessage("AR Mode Switcher", "LoadModelFromJS", event.data.payload);
+                } else {
+                    pendingModelPayload = event.data.payload;
+                }
+            } else if (event.data.type === "SET_MODE" && event.data.mode) {
+                if (window.uarGameInstance) {
+                    window.uarGameInstance.SendMessage("AR Mode Switcher", "SetMode", event.data.mode);
+                } else {
+                    pendingMode = event.data.mode;
+                }
+            } else if (event.data.type === "RESIZE_VIEWPORT") {
+                window.dispatchEvent(new Event("resize"));
+            }
+        });
+
         function CreateUnityLoader() {
             createUnityInstance(canvas, config, (progress) => {
                 spinner.style.display = "none";
@@ -215,6 +306,14 @@
             }).then((unityInstance) => {
                 loadingCover.style.display = "none";
                 window.uarGameInstance = unityInstance;
+                if (pendingMode) {
+                    unityInstance.SendMessage("AR Mode Switcher", "SetMode", pendingMode);
+                    pendingMode = null;
+                }
+                if (pendingModelPayload) {
+                    unityInstance.SendMessage("AR Mode Switcher", "LoadModelFromJS", pendingModelPayload);
+                    pendingModelPayload = null;
+                }
             }).catch((message) => {
                 alert(message);
             });

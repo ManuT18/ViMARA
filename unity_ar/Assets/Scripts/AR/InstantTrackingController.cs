@@ -45,6 +45,7 @@ namespace ViMARA.AR
         private Vector3 m_smoothedWorldPos;
         private Quaternion m_smoothedWorldRot = Quaternion.identity;
         private bool m_hasValidSmoothedPose = false;
+        private float m_lastAnchorUpdateTime = 0f;
 
         // Elementos visuales del delimitador de plano
         private GameObject m_visualizerRoot;
@@ -62,7 +63,31 @@ namespace ViMARA.AR
         private void Awake()
         {
             m_trackingTarget = GetComponent<ZapparInstantTrackingTarget>();
+            if (m_trackingTarget != null)
+            {
+                // CRÍTICO: Evitar que ZapparInstantTrackingTarget.Update() llame por su cuenta a
+                // Z.InstantWorldTrackerAnchorPoseSetFromCameraOffset(..., MINUS_Z_AWAY_FROM_USER) cada frame,
+                // lo cual entraba en conflicto con nuestra llamada MINUS_Z_HEADING duplicando la carga en WASM.
+                m_trackingTarget.MoveAnchorOnZ = true;
+                m_trackingTarget.m_placeOnTouch = false;
+            }
             SetupBoundedPlaneVisualizer();
+        }
+
+        private void OnEnable()
+        {
+            if (m_trackingTarget != null && m_trackingTarget.InstantTracker != null)
+            {
+                Z.InstantWorldTrackerEnabledSet(m_trackingTarget.InstantTracker.Value, true);
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (m_trackingTarget != null && m_trackingTarget.InstantTracker != null)
+            {
+                Z.InstantWorldTrackerEnabledSet(m_trackingTarget.InstantTracker.Value, false);
+            }
         }
 
         private void Start()
@@ -361,16 +386,22 @@ namespace ViMARA.AR
             bool detectVertical = EnableVerticalPlaneDetection && (pitchDownAngle < 14f && pitchDownAngle > -35f);
             m_isVerticalPlane = detectVertical;
 
+            bool shouldUpdateNativeAnchor = (Time.unscaledTime - m_lastAnchorUpdateTime) >= 0.032f;
+
             if (detectVertical)
             {
-                // Modo Plano Vertical (Pared frente al usuario)
-                Z.InstantWorldTrackerAnchorPoseSetFromCameraOffset(
-                    m_trackingTarget.InstantTracker.Value,
-                    0f,
-                    0f,
-                    -ScanDistance,
-                    Z.InstantTrackerTransformOrientation.MINUS_Z_HEADING
-                );
+                if (shouldUpdateNativeAnchor)
+                {
+                    m_lastAnchorUpdateTime = Time.unscaledTime;
+                    // Modo Plano Vertical (Pared frente al usuario)
+                    Z.InstantWorldTrackerAnchorPoseSetFromCameraOffset(
+                        m_trackingTarget.InstantTracker.Value,
+                        0f,
+                        0f,
+                        -ScanDistance,
+                        Z.InstantTrackerTransformOrientation.MINUS_Z_HEADING
+                    );
+                }
                 // Rotar el plano 90° hacia el usuario para que se apoye verticalmente sobre la pared
                 m_currentPlaneSurfaceRot = Quaternion.Euler(-90f, 0f, 0f);
             }
@@ -382,13 +413,17 @@ namespace ViMARA.AR
                 float dynamicY = -Mathf.Sin(rad) * ScanDistance;
                 float dynamicZ = -Mathf.Cos(rad) * ScanDistance;
 
-                Z.InstantWorldTrackerAnchorPoseSetFromCameraOffset(
-                    m_trackingTarget.InstantTracker.Value,
-                    0f,
-                    dynamicY,
-                    dynamicZ,
-                    Z.InstantTrackerTransformOrientation.MINUS_Z_HEADING
-                );
+                if (shouldUpdateNativeAnchor)
+                {
+                    m_lastAnchorUpdateTime = Time.unscaledTime;
+                    Z.InstantWorldTrackerAnchorPoseSetFromCameraOffset(
+                        m_trackingTarget.InstantTracker.Value,
+                        0f,
+                        dynamicY,
+                        dynamicZ,
+                        Z.InstantTrackerTransformOrientation.MINUS_Z_HEADING
+                    );
+                }
                 m_currentPlaneSurfaceRot = Quaternion.identity;
             }
 

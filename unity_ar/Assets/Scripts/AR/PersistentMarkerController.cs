@@ -123,6 +123,10 @@ namespace ViMARA.AR
         private void OnEnable()
         {
             HideMarkerPreviewObjects();
+            if (m_imageTarget != null && m_imageTarget.ImageTracker != null)
+            {
+                Z.ImageTrackerEnabledSet(m_imageTarget.ImageTracker.Value, true);
+            }
             if (TargetModel != null && m_hasBeenDetectedOnce)
             {
                 TargetModel.gameObject.SetActive(true);
@@ -131,6 +135,10 @@ namespace ViMARA.AR
 
         private void OnDisable()
         {
+            if (m_imageTarget != null && m_imageTarget.ImageTracker != null)
+            {
+                Z.ImageTrackerEnabledSet(m_imageTarget.ImageTracker.Value, false);
+            }
             if (TargetModel != null)
             {
                 TargetModel.gameObject.SetActive(false);

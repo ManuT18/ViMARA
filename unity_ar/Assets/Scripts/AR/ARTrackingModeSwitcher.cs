@@ -30,11 +30,12 @@ namespace ViMARA.AR
         private TrackingMode m_currentMode;
         private RuntimeModelLoader m_modelLoader;
         private string m_initialModelPayload;
+        private float m_nextGcMaintenanceTime = 20f;
 
         private void Awake()
         {
-            // En WebGL, dejar que el navegador gestione los fotogramas vía requestAnimationFrame (-1)
-            // evita bloqueos en el hilo de decodificación de video de la cámara.
+            // En WebGL, usar 30 FPS estables sincronizados con la tasa real de captura de la cámara móvil (30fps)
+            // evita saturar el hilo único de WebAssembly y el decodificador de video HTML5.
             Application.targetFrameRate = -1;
 
             m_modelLoader = GetComponent<RuntimeModelLoader>();
@@ -44,6 +45,20 @@ namespace ViMARA.AR
             }
 
             ParseParametersFromURL();
+
+            // CRÍTICO: Desactivar el tracker que NO se usa en Awake() ANTES de que Unity ejecute Start()
+            // en ZapparInstantTrackingTarget o ZapparImageTrackingTarget. Así evitamos que ambos trackers
+            // se registren e inicialicen simultáneamente en el pipeline nativo C++/WASM de Zappar.
+            if (m_currentMode == TrackingMode.Marker)
+            {
+                if (InstantTrackingRoot != null) InstantTrackingRoot.SetActive(false);
+                if (ImageTrackingRoot != null) ImageTrackingRoot.SetActive(true);
+            }
+            else
+            {
+                if (ImageTrackingRoot != null) ImageTrackingRoot.SetActive(false);
+                if (InstantTrackingRoot != null) InstantTrackingRoot.SetActive(true);
+            }
         }
 
         private void Start()
@@ -59,6 +74,17 @@ namespace ViMARA.AR
             {
                 // Si no se especificó modelo en la URL, cargar por defecto la Casa Moderna en lugar del cubo básico
                 m_modelLoader.LoadModelFromPayload("preset:house|preset");
+            }
+        }
+
+        private void Update()
+        {
+            // Mantenimiento periódico ligero de memoria para recolectar los arrays float[16] temporales
+            // que el wrapper Z.cs del SDK de Zappar aloja en cada frame, evitando pausas largas o bloqueos.
+            if (Time.unscaledTime >= m_nextGcMaintenanceTime)
+            {
+                m_nextGcMaintenanceTime = Time.unscaledTime + 20f;
+                GC.Collect(0, GCCollectionMode.Optimized, false);
             }
         }
 
@@ -171,10 +197,25 @@ namespace ViMARA.AR
 
             if (mode == TrackingMode.Marker)
             {
-                if (InstantTrackingRoot != null) InstantTrackingRoot.SetActive(false);
+                if (InstantTrackingRoot != null)
+                {
+                    var instantTarget = InstantTrackingRoot.GetComponent<ZapparInstantTrackingTarget>();
+                    if (instantTarget != null && instantTarget.InstantTracker != null)
+                    {
+                        Z.InstantWorldTrackerEnabledSet(instantTarget.InstantTracker.Value, false);
+                    }
+                    InstantTrackingRoot.SetActive(false);
+                }
+
                 if (ImageTrackingRoot != null)
                 {
                     ImageTrackingRoot.SetActive(true);
+                    var imageTarget = ImageTrackingRoot.GetComponent<ZapparImageTrackingTarget>();
+                    if (imageTarget != null && imageTarget.ImageTracker != null)
+                    {
+                        Z.ImageTrackerEnabledSet(imageTarget.ImageTracker.Value, true);
+                    }
+
                     if (ZapparCamera.Instance != null)
                     {
                         ZapparCamera.Instance.AnchorOrigin = null;
@@ -184,13 +225,27 @@ namespace ViMARA.AR
             }
             else
             {
-                if (ImageTrackingRoot != null) ImageTrackingRoot.SetActive(false);
+                if (ImageTrackingRoot != null)
+                {
+                    var imageTarget = ImageTrackingRoot.GetComponent<ZapparImageTrackingTarget>();
+                    if (imageTarget != null && imageTarget.ImageTracker != null)
+                    {
+                        Z.ImageTrackerEnabledSet(imageTarget.ImageTracker.Value, false);
+                    }
+                    ImageTrackingRoot.SetActive(false);
+                }
+
                 if (InstantTrackingRoot != null)
                 {
                     InstantTrackingRoot.SetActive(true);
+                    var instantTargetComp = InstantTrackingRoot.GetComponent<ZapparInstantTrackingTarget>();
+                    if (instantTargetComp != null && instantTargetComp.InstantTracker != null)
+                    {
+                        Z.InstantWorldTrackerEnabledSet(instantTargetComp.InstantTracker.Value, true);
+                    }
+
                     if (ZapparCamera.Instance != null)
                     {
-                        var instantTargetComp = InstantTrackingRoot.GetComponent<ZapparInstantTrackingTarget>();
                         ZapparCamera.Instance.AnchorOrigin = instantTargetComp;
                         ZapparCamera.Instance.CameraAttitudeFromGyro = false;
                     }

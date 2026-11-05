@@ -65,6 +65,12 @@ public class SceneSetupWindow : EditorWindow
         // 4. Asegurar InstantTrackingController en el target de superficie
         if (instantRoot != null)
         {
+            var instantTarget = instantRoot.GetComponent<ZapparInstantTrackingTarget>();
+            if (instantTarget != null)
+            {
+                instantTarget.MoveAnchorOnZ = true;
+                instantTarget.m_placeOnTouch = false;
+            }
             var instantCtrl = instantRoot.GetComponent<InstantTrackingController>();
             if (instantCtrl == null) instantCtrl = instantRoot.AddComponent<InstantTrackingController>();
             instantCtrl.ShowPlaneVisualizer = true;
