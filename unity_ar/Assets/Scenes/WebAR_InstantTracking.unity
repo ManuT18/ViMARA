@@ -364,8 +364,8 @@ Transform:
   m_GameObject: {fileID: 359664341}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.15, z: 0}
-  m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 99963335}
@@ -418,8 +418,8 @@ Transform:
   m_GameObject: {fileID: 510392386}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.15, z: 0}
-  m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 972783421}
@@ -777,7 +777,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03b0f3f9cd1f10445a1fddecec0aacb1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: NewAssembly::ViMARA.AR.PersistentMarkerController
-  ElevationOffset: 0.15
+  ElevationOffset: 0.02
   TrackingLerpSpeed: 12
   TargetModel: {fileID: 510392387}
 --- !u!1 &1215035208
@@ -937,6 +937,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1717520485}
   - component: {fileID: 1717520484}
+  - component: {fileID: 1717520486}
   m_Layer: 0
   m_Name: AR Mode Switcher
   m_TagString: Untagged
@@ -974,6 +975,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1717520486
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1717520483}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b7efae16bea6474d8e8bd261a6d17a9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: NewAssembly::ViMARA.AR.RuntimeModelLoader
+  SurfaceModelContainer: {fileID: 359664345}
+  MarkerModelContainer: {fileID: 510392387}
+  TargetNormalizedSize: 0.45
 --- !u!21 &1831254972
 Material:
   serializedVersion: 8
