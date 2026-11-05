@@ -68,7 +68,7 @@ public class SceneSetupWindow : EditorWindow
             var instantTarget = instantRoot.GetComponent<ZapparInstantTrackingTarget>();
             if (instantTarget != null)
             {
-                instantTarget.MoveAnchorOnZ = true;
+                instantTarget.MoveAnchorOnZ = false;
             }
             var instantCtrl = instantRoot.GetComponent<InstantTrackingController>();
             if (instantCtrl == null) instantCtrl = instantRoot.AddComponent<InstantTrackingController>();

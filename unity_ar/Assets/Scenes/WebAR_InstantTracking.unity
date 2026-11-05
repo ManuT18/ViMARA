@@ -151,7 +151,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Zappar.UAR::Zappar.ZapparInstantTrackingTarget
   m_anchorOffsetFromCamera: {x: 0, y: -0.45, z: -1.4}
   m_placeOnTouch: 0
-  MoveAnchorOnZ: 1
+  MoveAnchorOnZ: 0
   m_zCamera: {fileID: 0}
   m_minZDistance: 3
   m_maxZDistance: 40
@@ -185,12 +185,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: NewAssembly::ViMARA.AR.InstantTrackingController
   AllowTouchToggle: 1
   ResetKey: 32
-  EnableVerticalPlaneDetection: 1
-  ScanDistance: 1.45
+  SurfaceOffset: {x: 0, y: -0.45, z: -1.4}
   ShowPlaneVisualizer: 1
-  PlaneBoundsSize: {x: 0.75, y: 0.75}
-  HorizontalPlaneColor: {r: 0.06, g: 0.72, b: 0.98, a: 0.95}
-  VerticalPlaneColor: {r: 0.2, g: 0.88, b: 0.62, a: 0.95}
+  ReticleRadius: 0.45
+  ThemeColor: {r: 0.14, g: 0.65, b: 1, a: 0.9}
   ModelContainer: {fileID: 359664345}
 --- !u!850595691 &131171770
 LightingSettings:

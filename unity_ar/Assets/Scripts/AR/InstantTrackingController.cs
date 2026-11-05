@@ -5,12 +5,13 @@ using Zappar;
 namespace ViMARA.AR
 {
     /// <summary>
-    /// Controlador avanzado de detección y visualización de planos (Horizontales y Verticales) para ViMARA WebAR.
+    /// Controlador optimizado para Zappar Instant Tracking en ViMARA.
     /// Características:
-    /// 1. Detección inteligente de planos Horizontales (suelo/mesa) y Verticales (paredes) según la inclinación del dispositivo en tiempo real.
-    /// 2. Visualizador arquitectónico de plano delimitado: muestra el polígono del plano detectado con borde perimetral continuo,
-    ///    escuadras de delimitación en las 4 esquinas, grilla métrica arquitectónica procedural y barra láser de escaneo que recorre el plano.
-    /// 3. Estabilizador de pose (Deadzone + amortiguación exponencial en LateUpdate) para eliminar temblores tanto antes como después de colocar la maqueta.
+    /// 1. Muestra la retícula circular de puntos de escaneo de superficie antes de colocar.
+    /// 2. Oculta la maqueta 3D hasta que el usuario toca la pantalla para fijarla.
+    /// 3. Si la maqueta ya está colocada y el usuario toca nuevamente la pantalla (toque corto sin arrastrar ni hacer zoom),
+    ///    el modelo se "destraba" y vuelve al modo de escaneo para reubicarlo en otro punto.
+    /// 4. Habilita manipulación táctil (rotación 360° con 1 dedo y zoom con 2 dedos) sobre la maqueta fijada.
     /// </summary>
     [RequireComponent(typeof(ZapparInstantTrackingTarget))]
     public class InstantTrackingController : MonoBehaviour
@@ -21,70 +22,55 @@ namespace ViMARA.AR
         public bool AllowTouchToggle = true;
         public KeyCode ResetKey = KeyCode.Space;
 
-        [Header("Detección Horizontal y Vertical")]
-        [Tooltip("Permite detectar tanto superficies horizontales (mesas/pisos) como paredes verticales según el ángulo de la cámara.")]
-        public bool EnableVerticalPlaneDetection = true;
-        [Tooltip("Distancia base del plano frente a la cámara durante el escaneo.")]
-        public float ScanDistance = 1.45f;
+        [Header("Calibración Ergonómica Inicial")]
+        public Vector3 SurfaceOffset = new Vector3(0, -0.45f, -1.4f);
 
-        [Header("Visualizador Arquitectónico de Plano Delimitado")]
+        [Header("Visualizador de Superficie (Dot Grid / Scanning Reticle)")]
         public bool ShowPlaneVisualizer = true;
-        [Tooltip("Ancho y largo del área de plano delimitada (en metros).")]
-        public Vector2 PlaneBoundsSize = new Vector2(0.75f, 0.75f);
-        public Color HorizontalPlaneColor = new Color(0.06f, 0.72f, 0.98f, 0.95f); // Cian arquitectónico
-        public Color VerticalPlaneColor = new Color(0.20f, 0.88f, 0.62f, 0.95f);   // Verde esmeralda para pared
+        public float ReticleRadius = 0.45f;
+        public Color ThemeColor = new Color(0.14f, 0.65f, 1.0f, 0.9f);
 
         [Header("Referencia a la Maqueta / Modelo 3D")]
         public Transform ModelContainer;
 
-        // Estado del plano actual
-        private bool m_isVerticalPlane = false;
-        private Quaternion m_currentPlaneSurfaceRot = Quaternion.identity;
-
-        // Estabilización de pose cuando está colocado
-        private Vector3 m_smoothedWorldPos;
-        private Quaternion m_smoothedWorldRot = Quaternion.identity;
-        private bool m_hasValidSmoothedPose = false;
-        private float m_lastAnchorUpdateTime = 0f;
-
-        // Elementos visuales del delimitador de plano
+        // Visualizadores procedurales originales (retícula circular + malla de puntos)
         private GameObject m_visualizerRoot;
-        private GameObject m_surfaceFillQuad;
-        private LineRenderer m_perimeterBorder;
-        private LineRenderer[] m_cornerBrackets;
-        private LineRenderer m_scanLaserLine;
-        private LineRenderer m_normalIndicator;
+        private LineRenderer m_outerRing;
+        private LineRenderer m_innerRing;
+        private LineRenderer m_crosshair;
+        private GameObject m_dotGridPlane;
+        private Material m_ringMaterial;
+        private Material m_innerMaterial;
+        private Material m_dotGridMaterial;
 
-        private Material m_lineMaterial;
-        private Material m_laserMaterial;
-        private Material m_gridFillMaterial;
-        private Texture2D m_proceduralGridTex;
+        // Detección de toque simple (Tap) vs Arrastre/Zoom para destrabar el modelo
+        private Vector2 m_touchStartPos;
+        private float m_touchStartTime;
+        private bool m_potentialTap = false;
+        private bool m_multiTouchOccurred = false;
+        private float m_lastPlacementChangeTime = -1f;
+
+        private Vector3 m_mouseStartPos;
+        private float m_mouseStartTime;
+        private bool m_potentialMouseTap = false;
 
         private void Awake()
         {
+            Input.simulateMouseWithTouches = false;
             m_trackingTarget = GetComponent<ZapparInstantTrackingTarget>();
             if (m_trackingTarget != null)
             {
-                // CRÍTICO: Evitar que ZapparInstantTrackingTarget.Update() llame por su cuenta a
-                // Z.InstantWorldTrackerAnchorPoseSetFromCameraOffset(..., MINUS_Z_AWAY_FROM_USER) cada frame,
-                // lo cual entraba en conflicto con nuestra llamada MINUS_Z_HEADING duplicando la carga en WASM.
-                m_trackingTarget.MoveAnchorOnZ = true;
+                // Permitir que ZapparInstantTrackingTarget gestione nativamente el offset del anclaje antes de colocar
+                m_trackingTarget.MoveAnchorOnZ = false;
             }
-            SetupBoundedPlaneVisualizer();
+            SetupSurfaceVisualizer();
         }
 
         private void OnEnable()
         {
-            if (m_trackingTarget != null)
+            if (m_trackingTarget != null && m_trackingTarget.InstantTracker != null)
             {
-                if (m_trackingTarget.InstantTracker != null)
-                {
-                    Z.InstantWorldTrackerEnabledSet(m_trackingTarget.InstantTracker.Value, true);
-                }
-                else if (ZapparCamera.Instance != null && ZapparCamera.Instance.PipelineIsInitialized)
-                {
-                    m_trackingTarget.OnZapparInitialized(ZapparCamera.Instance.GetPipeline);
-                }
+                Z.InstantWorldTrackerEnabledSet(m_trackingTarget.InstantTracker.Value, true);
             }
         }
 
@@ -126,207 +112,100 @@ namespace ViMARA.AR
             }
         }
 
-        /// <summary>
-        /// Construye un delimitador de superficie arquitectónica limpio:
-        /// - Relleno translúcido con grilla métrica procedural (sin el cuadro opaco viejo).
-        /// - Borde perimetral rectangular redondeado que delimita los límites exactos de la maqueta.
-        /// - 4 Escuadras de esquina (Corner Brackets) que se expanden al adaptarse al plano.
-        /// - Línea láser de barrido (Scan Line) que recorre el plano confirmando la lectura activa.
-        /// </summary>
-        private void SetupBoundedPlaneVisualizer()
+        private void SetupSurfaceVisualizer()
         {
             if (!ShowPlaneVisualizer) return;
 
-            m_visualizerRoot = new GameObject("BoundedPlaneVisualizer");
+            m_visualizerRoot = new GameObject("SurfaceScanningVisualizer");
             m_visualizerRoot.transform.SetParent(transform, false);
-            m_visualizerRoot.transform.localPosition = new Vector3(0, 0.003f, 0);
+            m_visualizerRoot.transform.localPosition = new Vector3(0, 0.005f, 0);
             m_visualizerRoot.transform.localRotation = Quaternion.identity;
 
-            Shader unlitShader = Shader.Find("Sprites/Default");
-            if (unlitShader == null) unlitShader = Shader.Find("Universal Render Pipeline/Unlit");
+            Shader unlitShader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (unlitShader == null) unlitShader = Shader.Find("Sprites/Default");
+            if (unlitShader == null) unlitShader = Shader.Find("Unlit/Color");
 
-            m_lineMaterial = new Material(unlitShader) { color = HorizontalPlaneColor };
-            m_laserMaterial = new Material(unlitShader) { color = new Color(1f, 1f, 1f, 0.85f) };
+            m_ringMaterial = new Material(unlitShader) { color = ThemeColor };
+            m_innerMaterial = new Material(unlitShader) { color = new Color(ThemeColor.r, ThemeColor.g, ThemeColor.b, 0.45f) };
 
-            m_proceduralGridTex = GenerateArchitecturalGridTexture(256);
-            m_gridFillMaterial = new Material(unlitShader)
+            // 1. Aro exterior
+            GameObject outerObj = new GameObject("OuterRing");
+            outerObj.transform.SetParent(m_visualizerRoot.transform, false);
+            m_outerRing = outerObj.AddComponent<LineRenderer>();
+            ConfigureLine(m_outerRing, m_ringMaterial, 0.015f, 48, ReticleRadius);
+
+            // 2. Aro interior pulsante
+            GameObject innerObj = new GameObject("InnerRing");
+            innerObj.transform.SetParent(m_visualizerRoot.transform, false);
+            m_innerRing = innerObj.AddComponent<LineRenderer>();
+            ConfigureLine(m_innerRing, m_innerMaterial, 0.008f, 32, ReticleRadius * 0.5f);
+
+            // 3. Cruz central
+            GameObject crosshairObj = new GameObject("Crosshair");
+            crosshairObj.transform.SetParent(m_visualizerRoot.transform, false);
+            m_crosshair = crosshairObj.AddComponent<LineRenderer>();
+            m_crosshair.useWorldSpace = false;
+            m_crosshair.startWidth = 0.01f;
+            m_crosshair.endWidth = 0.01f;
+            m_crosshair.material = m_ringMaterial;
+            m_crosshair.positionCount = 5;
+            float ch = ReticleRadius * 0.22f;
+            m_crosshair.SetPositions(new Vector3[]
             {
-                mainTexture = m_proceduralGridTex,
-                color = new Color(HorizontalPlaneColor.r, HorizontalPlaneColor.g, HorizontalPlaneColor.b, 0.42f)
-            };
-
-            float halfW = PlaneBoundsSize.x * 0.5f;
-            float halfH = PlaneBoundsSize.y * 0.5f;
-
-            // 1. Superficie del plano con grilla arquitectónica sutil
-            m_surfaceFillQuad = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            m_surfaceFillQuad.name = "PlaneSurfaceGrid";
-            m_surfaceFillQuad.transform.SetParent(m_visualizerRoot.transform, false);
-            m_surfaceFillQuad.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            m_surfaceFillQuad.transform.localScale = new Vector3(PlaneBoundsSize.x, PlaneBoundsSize.y, 1f);
-            Destroy(m_surfaceFillQuad.GetComponent<Collider>());
-            m_surfaceFillQuad.GetComponent<MeshRenderer>().sharedMaterial = m_gridFillMaterial;
-
-            // 2. Borde perimetral continuo del plano detectado
-            GameObject borderObj = new GameObject("PlanePerimeterBorder");
-            borderObj.transform.SetParent(m_visualizerRoot.transform, false);
-            m_perimeterBorder = borderObj.AddComponent<LineRenderer>();
-            m_perimeterBorder.useWorldSpace = false;
-            m_perimeterBorder.loop = true;
-            m_perimeterBorder.startWidth = 0.006f;
-            m_perimeterBorder.endWidth = 0.006f;
-            m_perimeterBorder.material = m_lineMaterial;
-            m_perimeterBorder.positionCount = 4;
-            m_perimeterBorder.SetPositions(new Vector3[]
-            {
-                new Vector3(-halfW, 0.001f, -halfH),
-                new Vector3( halfW, 0.001f, -halfH),
-                new Vector3( halfW, 0.001f,  halfH),
-                new Vector3(-halfW, 0.001f,  halfH)
+                new Vector3(-ch, 0, 0),
+                new Vector3(ch, 0, 0),
+                new Vector3(0, 0, 0),
+                new Vector3(0, 0, -ch),
+                new Vector3(0, 0, ch)
             });
 
-            // 3. Cuatro escuadras de esquina de alta precisión (Corner Brackets)
-            m_cornerBrackets = new LineRenderer[4];
-            float bracketLen = Mathf.Min(halfW, halfH) * 0.32f;
-            float offsetOut = 0.018f;
+            // 4. Malla de puntos (Dot Grid Plane)
+            m_dotGridPlane = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            m_dotGridPlane.name = "DotGridPlane";
+            m_dotGridPlane.transform.SetParent(m_visualizerRoot.transform, false);
+            m_dotGridPlane.transform.localRotation = Quaternion.Euler(90f, 0, 0);
+            m_dotGridPlane.transform.localScale = Vector3.one * (ReticleRadius * 2.2f);
+            Destroy(m_dotGridPlane.GetComponent<Collider>());
 
-            Vector2[] signs = new Vector2[]
+            Texture2D dotTex = Resources.Load<Texture2D>("PlanePatternDot");
+            m_dotGridMaterial = new Material(unlitShader) { color = new Color(ThemeColor.r, ThemeColor.g, ThemeColor.b, 0.35f) };
+            if (dotTex != null)
             {
-                new Vector2(-1, -1),
-                new Vector2( 1, -1),
-                new Vector2( 1,  1),
-                new Vector2(-1,  1)
-            };
-
-            for (int i = 0; i < 4; i++)
-            {
-                GameObject cornerObj = new GameObject($"CornerBracket_{i}");
-                cornerObj.transform.SetParent(m_visualizerRoot.transform, false);
-                LineRenderer lr = cornerObj.AddComponent<LineRenderer>();
-                lr.useWorldSpace = false;
-                lr.loop = false;
-                lr.startWidth = 0.012f;
-                lr.endWidth = 0.012f;
-                lr.material = m_lineMaterial;
-                lr.positionCount = 3;
-
-                float sx = signs[i].x;
-                float sz = signs[i].y;
-                float cx = sx * (halfW + offsetOut);
-                float cz = sz * (halfH + offsetOut);
-
-                lr.SetPositions(new Vector3[]
-                {
-                    new Vector3(cx - sx * bracketLen, 0.002f, cz),
-                    new Vector3(cx, 0.002f, cz),
-                    new Vector3(cx, 0.002f, cz - sz * bracketLen)
-                });
-                m_cornerBrackets[i] = lr;
+                m_dotGridMaterial.mainTexture = dotTex;
             }
-
-            // 4. Línea láser de escaneo que recorre el plano
-            GameObject laserObj = new GameObject("ScanLaserBar");
-            laserObj.transform.SetParent(m_visualizerRoot.transform, false);
-            m_scanLaserLine = laserObj.AddComponent<LineRenderer>();
-            m_scanLaserLine.useWorldSpace = false;
-            m_scanLaserLine.startWidth = 0.008f;
-            m_scanLaserLine.endWidth = 0.008f;
-            m_scanLaserLine.material = m_laserMaterial;
-            m_scanLaserLine.positionCount = 2;
-            m_scanLaserLine.SetPositions(new Vector3[]
-            {
-                new Vector3(-halfW * 0.96f, 0.003f, 0f),
-                new Vector3( halfW * 0.96f, 0.003f, 0f)
-            });
-
-            // 5. Indicador de normal (eje perpendicular al plano detectado)
-            GameObject normalObj = new GameObject("PlaneNormalAxis");
-            normalObj.transform.SetParent(m_visualizerRoot.transform, false);
-            m_normalIndicator = normalObj.AddComponent<LineRenderer>();
-            m_normalIndicator.useWorldSpace = false;
-            m_normalIndicator.startWidth = 0.007f;
-            m_normalIndicator.endWidth = 0.002f;
-            m_normalIndicator.material = m_laserMaterial;
-            m_normalIndicator.positionCount = 2;
-            m_normalIndicator.SetPositions(new Vector3[]
-            {
-                Vector3.zero,
-                new Vector3(0f, 0.09f, 0f)
-            });
+            m_dotGridPlane.GetComponent<MeshRenderer>().material = m_dotGridMaterial;
         }
 
-        /// <summary>
-        /// Genera una textura transparente con subdivisión de grilla arquitectónica (4x4 celdas + borde suave)
-        /// sin círculos ni cuadrados opacos.
-        /// </summary>
-        private Texture2D GenerateArchitecturalGridTexture(int size)
+        private void ConfigureLine(LineRenderer lr, Material mat, float width, int segments, float radius)
         {
-            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
-            tex.wrapMode = TextureWrapMode.Clamp;
-            tex.filterMode = FilterMode.Bilinear;
-
-            Color[] pixels = new Color[size * size];
-            int cells = 4;
-            int step = size / cells;
-
-            for (int y = 0; y < size; y++)
+            lr.useWorldSpace = false;
+            lr.loop = true;
+            lr.startWidth = width;
+            lr.endWidth = width;
+            lr.material = mat;
+            lr.positionCount = segments;
+            float step = 360f / segments;
+            for (int i = 0; i < segments; i++)
             {
-                for (int x = 0; x < size; x++)
-                {
-                    // Distancia normalizada desde el centro (0 a 1)
-                    float nx = Mathf.Abs((x / (float)size) * 2f - 1f);
-                    float ny = Mathf.Abs((y / (float)size) * 2f - 1f);
-                    float edgeDist = Mathf.Max(nx, ny);
-
-                    bool isMajorGrid = (x % step <= 1) || (y % step <= 1);
-                    bool isSubGrid = (x % (step / 2) == 0) || (y % (step / 2) == 0);
-
-                    float alpha = 0.06f; // Relleno interior ultra translúcido
-                    if (isMajorGrid) alpha = 0.55f;
-                    else if (isSubGrid) alpha = 0.22f;
-
-                    // Desvanecimiento suave hacia los bordes exteriores
-                    float vignette = Mathf.Clamp01(1.15f - edgeDist * 0.4f);
-                    pixels[y * size + x] = new Color(1f, 1f, 1f, alpha * vignette);
-                }
+                float rad = Mathf.Deg2Rad * (i * step);
+                lr.SetPosition(i, new Vector3(Mathf.Sin(rad) * radius, 0, Mathf.Cos(rad) * radius));
             }
-
-            tex.SetPixels(pixels);
-            tex.Apply();
-            return tex;
         }
 
         private void UpdateVisualState()
         {
             bool isPlaced = m_trackingTarget != null && m_trackingTarget.UserHasPlaced;
 
+            // Retícula de escaneo: activa SOLO cuando NO está fijado
             if (m_visualizerRoot != null)
             {
                 m_visualizerRoot.SetActive(!isPlaced && ShowPlaneVisualizer);
             }
 
+            // Maqueta 3D: activa SOLO cuando el usuario la ha FIJADO sobre el plano
             if (ModelContainer != null)
             {
                 ModelContainer.gameObject.SetActive(isPlaced);
-                if (isPlaced)
-                {
-                    var touchCtrl = ModelContainer.GetComponent<TouchManipulationController>();
-                    if (touchCtrl != null)
-                    {
-                        if (m_isVerticalPlane)
-                        {
-                            touchCtrl.SetExternalBaseRotation(transform.rotation * m_currentPlaneSurfaceRot);
-                        }
-                        else
-                        {
-                            touchCtrl.ClearExternalBaseRotation();
-                        }
-                    }
-                    else
-                    {
-                        ModelContainer.localRotation = m_currentPlaneSurfaceRot;
-                    }
-                }
             }
         }
 
@@ -336,176 +215,154 @@ namespace ViMARA.AR
 
             HandleInput();
 
-            if (!m_trackingTarget.UserHasPlaced)
-            {
-                UpdatePlaneDetectionAndVisualizer();
-            }
-        }
-
-        private void LateUpdate()
-        {
-            if (m_trackingTarget == null || m_trackingTarget.InstantTracker == null) return;
-
-            // Filtro de estabilización de mundo para evitar micro-temblores del giroscopio/cámara
-            if (!m_hasValidSmoothedPose)
-            {
-                m_smoothedWorldPos = transform.position;
-                m_smoothedWorldRot = transform.rotation;
-                m_hasValidSmoothedPose = true;
-            }
-            else
-            {
-                float posDist = Vector3.Distance(m_smoothedWorldPos, transform.position);
-                float rotAng = Quaternion.Angle(m_smoothedWorldRot, transform.rotation);
-
-                float posLerp = posDist < 0.005f ? Time.deltaTime * 3f : Time.deltaTime * 18f;
-                float rotLerp = rotAng < 1.0f ? Time.deltaTime * 3f : Time.deltaTime * 18f;
-
-                m_smoothedWorldPos = Vector3.Lerp(m_smoothedWorldPos, transform.position, Mathf.Clamp01(posLerp));
-                m_smoothedWorldRot = Quaternion.Slerp(m_smoothedWorldRot, transform.rotation, Mathf.Clamp01(rotLerp));
-
-                transform.position = m_smoothedWorldPos;
-                transform.rotation = m_smoothedWorldRot;
-            }
-        }
-
-        /// <summary>
-        /// Evalúa la inclinación de la cámara respecto a la gravedad para adaptar el plano:
-        /// - Si el usuario apunta hacia abajo (suelo/mesa): usa MINUS_Z_HEADING (plano horizontal nivelado por gravedad)
-        ///   y ajusta la distancia dinámicamente según el ángulo de picado para que el plano se pegue a la superficie.
-        /// - Si el usuario apunta de frente hacia una pared (pitch cercano al horizonte): cambia el plano a modo Vertical (Pared).
-        /// </summary>
-        private void UpdatePlaneDetectionAndVisualizer()
-        {
-            Transform camTr = ZapparCamera.Instance != null ? ZapparCamera.Instance.transform : Camera.main?.transform;
-            float pitchDownAngle = 35f;
-
-            if (camTr != null)
-            {
-                // Ángulo entre la mirada de la cámara y el horizonte
-                // Si mira hacia abajo: camTr.forward.y es negativo
-                float forwardY = camTr.forward.y;
-                pitchDownAngle = Mathf.Asin(Mathf.Clamp(-forwardY, -1f, 1f)) * Mathf.Rad2Deg;
-            }
-
-            // Si la cámara apunta casi horizontalmente (< 14° hacia abajo o hacia arriba) y está habilitado el modo pared
-            bool detectVertical = EnableVerticalPlaneDetection && (pitchDownAngle < 14f && pitchDownAngle > -35f);
-            m_isVerticalPlane = detectVertical;
-
-            bool shouldUpdateNativeAnchor = (Time.unscaledTime - m_lastAnchorUpdateTime) >= 0.032f;
-
-            if (detectVertical)
-            {
-                if (shouldUpdateNativeAnchor)
-                {
-                    m_lastAnchorUpdateTime = Time.unscaledTime;
-                    // Modo Plano Vertical (Pared frente al usuario)
-                    Z.InstantWorldTrackerAnchorPoseSetFromCameraOffset(
-                        m_trackingTarget.InstantTracker.Value,
-                        0f,
-                        0f,
-                        -ScanDistance,
-                        Z.InstantTrackerTransformOrientation.MINUS_Z_HEADING
-                    );
-                }
-                // Rotar el plano 90° hacia el usuario para que se apoye verticalmente sobre la pared
-                m_currentPlaneSurfaceRot = Quaternion.Euler(-90f, 0f, 0f);
-            }
-            else
-            {
-                // Modo Plano Horizontal (Mesa / Suelo) estabilizado por gravedad (MINUS_Z_HEADING)
-                float clampedPitch = Mathf.Clamp(pitchDownAngle, 15f, 75f);
-                float rad = clampedPitch * Mathf.Deg2Rad;
-                float dynamicY = -Mathf.Sin(rad) * ScanDistance;
-                float dynamicZ = -Mathf.Cos(rad) * ScanDistance;
-
-                if (shouldUpdateNativeAnchor)
-                {
-                    m_lastAnchorUpdateTime = Time.unscaledTime;
-                    Z.InstantWorldTrackerAnchorPoseSetFromCameraOffset(
-                        m_trackingTarget.InstantTracker.Value,
-                        0f,
-                        dynamicY,
-                        dynamicZ,
-                        Z.InstantTrackerTransformOrientation.MINUS_Z_HEADING
-                    );
-                }
-                m_currentPlaneSurfaceRot = Quaternion.identity;
-            }
-
+            // Animación suave de la retícula de escaneo mientras busca superficie
             if (m_visualizerRoot != null && m_visualizerRoot.activeSelf)
             {
-                // Suavizar transición entre orientación horizontal y vertical
-                m_visualizerRoot.transform.localRotation = Quaternion.Slerp(
-                    m_visualizerRoot.transform.localRotation,
-                    m_currentPlaneSurfaceRot,
-                    Time.deltaTime * 14f
-                );
+                m_visualizerRoot.transform.Rotate(Vector3.up, 20f * Time.deltaTime, Space.Self);
 
-                // Actualizar color según tipo de plano (Cian = Horizontal, Verde Esmeralda = Vertical)
-                Color activeCol = m_isVerticalPlane ? VerticalPlaneColor : HorizontalPlaneColor;
-                if (m_lineMaterial != null) m_lineMaterial.color = activeCol;
-                if (m_gridFillMaterial != null)
+                float pulse = 0.8f + Mathf.PingPong(Time.time * 0.7f, 0.35f);
+                if (m_innerRing != null)
                 {
-                    m_gridFillMaterial.color = new Color(activeCol.r, activeCol.g, activeCol.b, 0.38f);
+                    m_innerRing.transform.localScale = new Vector3(pulse, 1f, pulse);
                 }
-
-                // Animar barra láser de escaneo de extremo a extremo del plano delimitado
-                if (m_scanLaserLine != null)
-                {
-                    float halfW = PlaneBoundsSize.x * 0.48f;
-                    float halfH = PlaneBoundsSize.y * 0.48f;
-                    float scanZ = Mathf.Sin(Time.time * 2.4f) * halfH;
-                    m_scanLaserLine.SetPosition(0, new Vector3(-halfW, 0.003f, scanZ));
-                    m_scanLaserLine.SetPosition(1, new Vector3( halfW, 0.003f, scanZ));
-                }
-
-                // Respiración sutil del delimitador para dar feedback de adaptación viva al plano
-                float breath = 1f + Mathf.Sin(Time.time * 3.2f) * 0.025f;
-                m_visualizerRoot.transform.localScale = new Vector3(breath, 1f, breath);
             }
         }
 
         private void HandleInput()
         {
-            bool isClickOrTouchDown = false;
-
-            if (AllowTouchToggle)
-            {
-                if (Input.touchCount == 1)
-                {
-                    Touch touch = Input.GetTouch(0);
-                    if (touch.phase == TouchPhase.Began)
-                    {
-                        if (EventSystem.current == null || !EventSystem.current.IsPointerOverGameObject(touch.fingerId))
-                        {
-                            isClickOrTouchDown = true;
-                        }
-                    }
-                }
-                else if (Input.GetMouseButtonDown(0))
-                {
-                    if (EventSystem.current == null || !EventSystem.current.IsPointerOverGameObject())
-                    {
-                        isClickOrTouchDown = true;
-                    }
-                }
-            }
-
             bool isResetKeyPressed = Input.GetKeyDown(ResetKey) || Input.GetKeyDown(KeyCode.R);
-
-            if (isClickOrTouchDown)
-            {
-                if (!m_trackingTarget.UserHasPlaced)
-                {
-                    m_trackingTarget.PlaceTrackerAnchor();
-                    UpdateVisualState();
-                    Debug.Log($"[ViMARA AR] Plano {(m_isVerticalPlane ? "VERTICAL (Pared)" : "HORIZONTAL (Superficie)")} fijado. Maqueta posicionada.");
-                }
-            }
-            else if (isResetKeyPressed && m_trackingTarget.UserHasPlaced)
+            if (isResetKeyPressed && m_trackingTarget.UserHasPlaced)
             {
                 ResetPlacement();
+                return;
+            }
+
+            if (!AllowTouchToggle) return;
+
+            // --- 1. Entrada Táctil (Móvil) ---
+            if (Input.touchCount > 0)
+            {
+                m_potentialMouseTap = false;
+
+                if (Input.touchCount >= 2)
+                {
+                    m_multiTouchOccurred = true;
+                    m_potentialTap = false;
+                    return;
+                }
+
+                Touch touch = Input.GetTouch(0);
+
+                if (touch.phase == TouchPhase.Began)
+                {
+                    if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject(touch.fingerId))
+                    {
+                        m_potentialTap = false;
+                        return;
+                    }
+
+                    m_multiTouchOccurred = false;
+                    m_touchStartPos = touch.position;
+                    m_touchStartTime = Time.unscaledTime;
+
+                    if (!m_trackingTarget.UserHasPlaced)
+                    {
+                        // Si aún NO está colocado, fijar inmediatamente al tocar la pantalla
+                        if (Time.unscaledTime - m_lastPlacementChangeTime > 0.25f)
+                        {
+                            m_trackingTarget.PlaceTrackerAnchor();
+                            m_lastPlacementChangeTime = Time.unscaledTime;
+                            UpdateVisualState();
+                        }
+                        m_potentialTap = false;
+                    }
+                    else
+                    {
+                        // Si YA está colocado, esperamos a TouchPhase.Ended para distinguir un toque corto (destrabar) de un arrastre (rotar)
+                        m_potentialTap = true;
+                    }
+                }
+                else if (touch.phase == TouchPhase.Moved)
+                {
+                    if (m_potentialTap && Vector2.Distance(touch.position, m_touchStartPos) > 18f)
+                    {
+                        // El usuario está deslizando el dedo para rotar el modelo, no es un toque de destrabe
+                        m_potentialTap = false;
+                    }
+                }
+                else if (touch.phase == TouchPhase.Ended)
+                {
+                    if (m_potentialTap && !m_multiTouchOccurred && m_trackingTarget.UserHasPlaced)
+                    {
+                        float duration = Time.unscaledTime - m_touchStartTime;
+                        float moveDist = Vector2.Distance(touch.position, m_touchStartPos);
+
+                        if (duration < 0.35f && moveDist <= 18f && (Time.unscaledTime - m_lastPlacementChangeTime > 0.25f))
+                        {
+                            ResetPlacement();
+                        }
+                    }
+                    m_potentialTap = false;
+                }
+                else if (touch.phase == TouchPhase.Canceled)
+                {
+                    m_potentialTap = false;
+                }
+
+                return;
+            }
+            else
+            {
+                m_multiTouchOccurred = false;
+            }
+
+            // --- 2. Entrada de Mouse (Desktop) ---
+            if (Input.GetMouseButtonDown(0))
+            {
+                if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+                {
+                    m_potentialMouseTap = false;
+                    return;
+                }
+
+                m_mouseStartPos = Input.mousePosition;
+                m_mouseStartTime = Time.unscaledTime;
+
+                if (!m_trackingTarget.UserHasPlaced)
+                {
+                    if (Time.unscaledTime - m_lastPlacementChangeTime > 0.25f)
+                    {
+                        m_trackingTarget.PlaceTrackerAnchor();
+                        m_lastPlacementChangeTime = Time.unscaledTime;
+                        UpdateVisualState();
+                    }
+                    m_potentialMouseTap = false;
+                }
+                else
+                {
+                    m_potentialMouseTap = true;
+                }
+            }
+            else if (Input.GetMouseButton(0) && m_potentialMouseTap)
+            {
+                if (Vector3.Distance(Input.mousePosition, m_mouseStartPos) > 10f)
+                {
+                    m_potentialMouseTap = false;
+                }
+            }
+            else if (Input.GetMouseButtonUp(0))
+            {
+                if (m_potentialMouseTap && m_trackingTarget.UserHasPlaced)
+                {
+                    float duration = Time.unscaledTime - m_mouseStartTime;
+                    float moveDist = Vector3.Distance(Input.mousePosition, m_mouseStartPos);
+
+                    if (duration < 0.35f && moveDist <= 10f && (Time.unscaledTime - m_lastPlacementChangeTime > 0.25f))
+                    {
+                        ResetPlacement();
+                    }
+                }
+                m_potentialMouseTap = false;
             }
         }
 
@@ -514,18 +371,16 @@ namespace ViMARA.AR
             if (m_trackingTarget != null)
             {
                 m_trackingTarget.ResetTrackerAnchor();
-                m_hasValidSmoothedPose = false;
+                m_lastPlacementChangeTime = Time.unscaledTime;
                 UpdateVisualState();
-                Debug.Log("[ViMARA AR] Anclaje liberado. Escaneando plano...");
             }
         }
 
         private void OnDestroy()
         {
-            if (m_lineMaterial != null) Destroy(m_lineMaterial);
-            if (m_laserMaterial != null) Destroy(m_laserMaterial);
-            if (m_gridFillMaterial != null) Destroy(m_gridFillMaterial);
-            if (m_proceduralGridTex != null) Destroy(m_proceduralGridTex);
+            if (m_ringMaterial != null) Destroy(m_ringMaterial);
+            if (m_innerMaterial != null) Destroy(m_innerMaterial);
+            if (m_dotGridMaterial != null) Destroy(m_dotGridMaterial);
         }
     }
 }
