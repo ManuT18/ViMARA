@@ -224,6 +224,8 @@
                 } else {
                     pendingMode = event.data.mode;
                 }
+            } else if (event.data.type === "RESIZE_VIEWPORT") {
+                window.dispatchEvent(new Event("resize"));
             }
         });
 

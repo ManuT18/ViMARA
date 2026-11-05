@@ -1,6 +1,8 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using UnityEngine.Rendering;
 using ViMARA.AR;
 using Zappar;
 
@@ -9,6 +11,7 @@ public class SceneSetupWindow : EditorWindow
     [MenuItem("ViMARA/Setup AR Scene")]
     public static void SetupScene()
     {
+        EnsureShadersAlwaysIncluded();
         var scene = EditorSceneManager.GetActiveScene();
         
         // 1. Asegurar ARTrackingModeSwitcher y RuntimeModelLoader
@@ -69,6 +72,11 @@ public class SceneSetupWindow : EditorWindow
                 if (instantCtrl != null) instantCtrl.ModelContainer = instantCube.transform;
             }
             modelLoader.SurfaceModelContainer = instantCube.transform;
+            var cubeMr = instantCube.GetComponent<MeshRenderer>();
+            if (cubeMr != null && cubeMr.sharedMaterial != null)
+            {
+                modelLoader.BaseUrpMaterial = cubeMr.sharedMaterial;
+            }
         }
 
         // 6. Configurar Contenedor de Modelo dentro de Image Tracking Target
@@ -100,6 +108,60 @@ public class SceneSetupWindow : EditorWindow
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
-        Debug.Log("[ViMARA] Escena AR configurada con RuntimeModelLoader (GLB/GLTF/OBJ/STL + Maquetas de Prueba).");
+        Debug.Log("[ViMARA] Escena AR configurada con RuntimeModelLoader (GLB/GLTF/OBJ/STL + Maquetas de Prueba y Shaders URP/glTFast protegidos).");
+    }
+
+    private static void EnsureShadersAlwaysIncluded()
+    {
+        string[] shaderNames = new[]
+        {
+            "Universal Render Pipeline/Lit",
+            "Universal Render Pipeline/Simple Lit",
+            "Universal Render Pipeline/Unlit",
+            "Shader Graphs/glTF-pbrMetallicRoughness",
+            "Shader Graphs/glTF-pbrSpecularGlossiness",
+            "Shader Graphs/glTF-unlit",
+            "glTF/PbrMetallicRoughness",
+            "glTF/PbrSpecularGlossiness",
+            "glTF/Unlit"
+        };
+
+        var graphicsSettingsObj = AssetDatabase.LoadAssetAtPath<GraphicsSettings>("ProjectSettings/GraphicsSettings.asset");
+        if (graphicsSettingsObj == null) return;
+
+        var serializedObject = new SerializedObject(graphicsSettingsObj);
+        var arrayProp = serializedObject.FindProperty("m_AlwaysIncludedShaders");
+        if (arrayProp == null) return;
+
+        bool modified = false;
+        foreach (string sName in shaderNames)
+        {
+            Shader shader = Shader.Find(sName);
+            if (shader == null) continue;
+
+            bool exists = false;
+            for (int i = 0; i < arrayProp.arraySize; i++)
+            {
+                if (arrayProp.GetArrayElementAtIndex(i).objectReferenceValue == shader)
+                {
+                    exists = true;
+                    break;
+                }
+            }
+
+            if (!exists)
+            {
+                int idx = arrayProp.arraySize;
+                arrayProp.InsertArrayElementAtIndex(idx);
+                arrayProp.GetArrayElementAtIndex(idx).objectReferenceValue = shader;
+                modified = true;
+            }
+        }
+
+        if (modified)
+        {
+            serializedObject.ApplyModifiedProperties();
+            AssetDatabase.SaveAssets();
+        }
     }
 }
