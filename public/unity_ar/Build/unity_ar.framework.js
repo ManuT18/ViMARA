@@ -1206,7 +1206,7 @@ function createWasm() {
     // This assertion doesn't hold when emscripten is run in --post-link
     // mode.
     // TODO(sbc): Read INITIAL_MEMORY out of the wasm file in post-link mode.
-    //assert(wasmMemory.buffer.byteLength === 33554432);
+    //assert(wasmMemory.buffer.byteLength === 134217728);
     updateMemoryViews();
 
     wasmTable = Module['asm']['__indirect_function_table'];
@@ -10851,7 +10851,7 @@ function zappar_issue_js_plugin_face_mesh_uvs_size(o) { return window.zappar_nat
       // full 4GB Wasm memories, the size will wrap back to 0 bytes in Wasm side
       // for any code that deals with heap sizes, which would require special
       // casing all heap size related code to treat 0 specially.
-      return 2147418112;
+      return 536870912;
     }
   function _emscripten_get_heap_max() {
       return getHeapMax();
@@ -20672,8 +20672,8 @@ var dynCall_iiifiifii = Module["dynCall_iiifiifii"] = createExportWrapper("dynCa
 var dynCall_iiiiiiffiiiiiiiiiffffiii = Module["dynCall_iiiiiiffiiiiiiiiiffffiii"] = createExportWrapper("dynCall_iiiiiiffiiiiiiiiiffffiii");
 /** @type {function(...*):?} */
 var dynCall_ijiff = Module["dynCall_ijiff"] = createExportWrapper("dynCall_ijiff");
-var ___start_em_js = Module['___start_em_js'] = 5137604;
-var ___stop_em_js = Module['___stop_em_js'] = 5138184;
+var ___start_em_js = Module['___start_em_js'] = 5137572;
+var ___stop_em_js = Module['___stop_em_js'] = 5138152;
 function invoke_ii(index,a1) {
   var sp = stackSave();
   try {
