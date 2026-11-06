@@ -23,15 +23,15 @@
         html,
         body {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            margin: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
         }
 
         canvas {
             display: block;
+        }
+
+        body {
+            margin: 0;
         }
 
         #unity-container {
@@ -42,6 +42,7 @@
         #unity-canvas {
             width: 100%;
             height: 100%;
+
             background: #231F20;
         }
 
@@ -133,7 +134,7 @@
     </div>
     <script type="text/javascript" src="https://libs.zappar.com/zappar-cv/2.1.9/zappar-cv.js"></script>
     <script>
-        var db = indexedDB.open("dummy_indexdb", 1); // iOS 14.6 fix: prevents IndexedDB open hang
+        var db = indexedDB.open("dummy_indexdb", 1); // iOS 14.6 fix; the call to open indexdb hangs forever otherwise
 
         const buildUrl = "Build";
         const loaderUrl = buildUrl + "/unity_ar.loader.js";
@@ -145,14 +146,19 @@
             companyName: "DefaultCompany",
             productName: "ViMARA",
             productVersion: "1.0.0",
+        //Useful when used along with Filename as Hashes option
             cacheControl: function (url) {
-                if (url.match(/\.data/) || url.match(/\.bundle/) || url.match(/\.zpt/)) {
-                    return "must-revalidate";
-                }
-                if (url.match(/\.mp4/) || url.match(/\.custom/) || url.match(/\.zbin/)) {
-                    return "immutable";
-                }
-                return "no-store";
+            // typically includes: .data, .bundle, .zpt
+            if (url.match(/\.data/) || url.match(/\.bundle/) || url.match(/\.zpt/)) {
+             return "must-revalidate";
+            }
+   
+            if (url.match(/\.mp4/) || url.match(/\.custom/) || url.match(/\.zbin/)) {
+                return "immutable";
+            }   
+            // Disable explicit caching for all other files.
+            // Note: the default browser cache may cache them anyway.
+            return "no-store";
             },
         };
 
@@ -161,18 +167,19 @@
         const loadingCover = document.querySelector("#loading-cover");
         const progressBarEmpty = document.querySelector("#unity-progress-bar-empty");
         const progressBarFull = document.querySelector("#unity-progress-bar-full");
-        const spinner = document.querySelector(".spinner");
+        const spinner = document.querySelector('.spinner');
 
         if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
             container.className = "unity-mobile";
             // Limitar devicePixelRatio en móviles evita saturar la VRAM y el ancho de banda WebGL
+            // (en pantallas 3x Retina reduce 80% la carga de sombreado sin pérdida visual perceptible).
             config.devicePixelRatio = Math.min(window.devicePixelRatio || 1, 1.25);
         }
         loadingCover.style.display = "";
 
         window.zappar = ZCV.initialize();
 
-        // Watchdog del elemento <video> de la cámara móvil para evitar pausas involuntarias en iOS/Android
+        // Watchdog del elemento <video> de la cámara móvil para evitar que iOS/Android pausen el stream
         (function installCameraVideoWatchdog() {
             function ensureCameraVideosPlaying() {
                 if (document.visibilityState && document.visibilityState !== "visible") return;
@@ -197,6 +204,7 @@
 
         const script = document.createElement("script");
         script.src = loaderUrl;
+        //script.onload = () => { CreateUnityLoader();   };
         document.body.appendChild(script);
 
         window.zappar.permission_request_ui_promise().then(WaitForZCVLoad);
@@ -211,13 +219,6 @@
 
         var pendingModelPayload = null;
         var pendingMode = null;
-
-        function notifyViewportResize() {
-            window.dispatchEvent(new Event("resize"));
-            setTimeout(function () {
-                window.dispatchEvent(new Event("resize"));
-            }, 120);
-        }
 
         window.addEventListener("message", function (event) {
             if (!event.data || typeof event.data !== "object") return;
@@ -234,7 +235,7 @@
                     pendingMode = event.data.mode;
                 }
             } else if (event.data.type === "RESIZE_VIEWPORT") {
-                notifyViewportResize();
+                window.dispatchEvent(new Event("resize"));
             }
         });
 
@@ -258,6 +259,7 @@
                 alert(message);
             });
         }
+
     </script>
 </body>
 
