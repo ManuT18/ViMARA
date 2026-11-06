@@ -7,10 +7,12 @@ namespace ViMARA.AR
 {
     /// <summary>
     /// Gestiona el modo activo de Realidad Aumentada (Superficie vs Marcador)
-    /// y coordina la carga del modelo 3D seleccionado desde la URL o desde mensajes de React.
+    /// y coordina la carga del modelo 3D seleccionado desde la URL inicial o vía mensajes desde React.
     /// </summary>
     public class ARTrackingModeSwitcher : MonoBehaviour
     {
+        private const string DefaultPresetPayload = "preset:house|preset";
+
         [Header("Referencias a los Targets")]
         [Tooltip("Objeto raíz para el seguimiento por superficie/plano (Instant Tracking).")]
         public GameObject InstantTrackingRoot;
@@ -44,19 +46,11 @@ namespace ViMARA.AR
 
             ParseParametersFromURL();
 
-            // CRÍTICO: Desactivar el tracker que NO se usa en Awake() ANTES de que Unity ejecute Start()
-            // en ZapparInstantTrackingTarget o ZapparImageTrackingTarget. Así evitamos que ambos trackers
-            // se registren e inicialicen simultáneamente en el pipeline nativo C++/WASM de Zappar.
-            if (m_currentMode == TrackingMode.Marker)
-            {
-                if (InstantTrackingRoot != null) InstantTrackingRoot.SetActive(false);
-                if (ImageTrackingRoot != null) ImageTrackingRoot.SetActive(true);
-            }
-            else
-            {
-                if (ImageTrackingRoot != null) ImageTrackingRoot.SetActive(false);
-                if (InstantTrackingRoot != null) InstantTrackingRoot.SetActive(true);
-            }
+            // Desactivar el tracker inactivo en Awake() antes de que Unity ejecute Start()
+            // en ZapparInstantTrackingTarget o ZapparImageTrackingTarget, evitando inicializar ambos en WASM.
+            bool isMarker = m_currentMode == TrackingMode.Marker;
+            if (InstantTrackingRoot != null) InstantTrackingRoot.SetActive(!isMarker);
+            if (ImageTrackingRoot != null) ImageTrackingRoot.SetActive(isMarker);
         }
 
         private void Start()
@@ -64,15 +58,11 @@ namespace ViMARA.AR
             ResolveModelContainers();
             ApplyTrackingMode(m_currentMode);
 
-            if (!string.IsNullOrEmpty(m_initialModelPayload))
-            {
-                m_modelLoader.LoadModelFromPayload(m_initialModelPayload);
-            }
-            else
-            {
-                // Si no se especificó modelo en la URL, cargar por defecto la Casa Moderna en lugar del cubo básico
-                m_modelLoader.LoadModelFromPayload("preset:house|preset");
-            }
+            string payloadToLoad = !string.IsNullOrEmpty(m_initialModelPayload)
+                ? m_initialModelPayload
+                : DefaultPresetPayload;
+
+            m_modelLoader.LoadModelFromPayload(payloadToLoad);
         }
 
         private void ResolveModelContainers()
@@ -98,24 +88,14 @@ namespace ViMARA.AR
         private void ParseParametersFromURL()
         {
             string url = Application.absoluteURL;
-            Debug.Log($"[ViMARA AR] URL del visor: {url}");
-
             if (string.IsNullOrEmpty(url))
             {
                 m_currentMode = DefaultMode;
                 return;
             }
 
-            if (url.IndexOf("mode=marker", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                m_currentMode = TrackingMode.Marker;
-                Debug.Log("[ViMARA AR] Modo activo: SEGUIMIENTO POR MARCADOR (World Lock).");
-            }
-            else
-            {
-                m_currentMode = TrackingMode.Surface;
-                Debug.Log("[ViMARA AR] Modo activo: SEGUIMIENTO POR SUPERFICIE (Plano).");
-            }
+            string modeParam = GetQueryParam(url, "mode");
+            m_currentMode = IsMarkerModeName(modeParam) ? TrackingMode.Marker : TrackingMode.Surface;
 
             string modelParam = GetQueryParam(url, "model");
             string formatParam = GetQueryParam(url, "format");
@@ -128,7 +108,12 @@ namespace ViMARA.AR
             }
         }
 
-        private string GetQueryParam(string fullUrl, string key)
+        private static bool IsMarkerModeName(string modeName)
+        {
+            return string.Equals(modeName, "marker", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string GetQueryParam(string fullUrl, string key)
         {
             int qIndex = fullUrl.IndexOf('?');
             if (qIndex < 0 || qIndex + 1 >= fullUrl.Length) return null;
@@ -141,41 +126,34 @@ namespace ViMARA.AR
             foreach (string pair in pairs)
             {
                 int eqIdx = pair.IndexOf('=');
-                if (eqIdx > 0)
+                if (eqIdx <= 0) continue;
+
+                string k = pair.Substring(0, eqIdx);
+                if (string.Equals(k, key, StringComparison.OrdinalIgnoreCase))
                 {
-                    string k = pair.Substring(0, eqIdx);
-                    if (string.Equals(k, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        string val = pair.Substring(eqIdx + 1);
-                        return UnityWebRequest.UnEscapeURL(val);
-                    }
+                    string val = pair.Substring(eqIdx + 1);
+                    return UnityWebRequest.UnEscapeURL(val);
                 }
             }
             return null;
         }
 
         /// <summary>
-        /// Llamado desde JavaScript mediante unityInstance.SendMessage('AR Mode Switcher', 'LoadModelFromJS', payload)
+        /// Invocado desde JavaScript mediante unityInstance.SendMessage("AR Mode Switcher", "LoadModelFromJS", payload)
         /// </summary>
         public void LoadModelFromJS(string payload)
         {
-            if (m_modelLoader != null)
-            {
-                ResolveModelContainers();
-                m_modelLoader.LoadModelFromPayload(payload);
-            }
+            if (m_modelLoader == null) return;
+            ResolveModelContainers();
+            m_modelLoader.LoadModelFromPayload(payload);
         }
 
+        /// <summary>
+        /// Invocado desde JavaScript mediante unityInstance.SendMessage("AR Mode Switcher", "SetMode", modeName)
+        /// </summary>
         public void SetMode(string modeName)
         {
-            if (string.Equals(modeName, "marker", StringComparison.OrdinalIgnoreCase))
-            {
-                ApplyTrackingMode(TrackingMode.Marker);
-            }
-            else
-            {
-                ApplyTrackingMode(TrackingMode.Surface);
-            }
+            ApplyTrackingMode(IsMarkerModeName(modeName) ? TrackingMode.Marker : TrackingMode.Surface);
         }
 
         private void ApplyTrackingMode(TrackingMode mode)
@@ -184,62 +162,72 @@ namespace ViMARA.AR
 
             if (mode == TrackingMode.Marker)
             {
-                if (InstantTrackingRoot != null)
-                {
-                    var instantTarget = InstantTrackingRoot.GetComponent<ZapparInstantTrackingTarget>();
-                    if (instantTarget != null && instantTarget.InstantTracker != null)
-                    {
-                        Z.InstantWorldTrackerEnabledSet(instantTarget.InstantTracker.Value, false);
-                    }
-                    InstantTrackingRoot.SetActive(false);
-                }
-
-                if (ImageTrackingRoot != null)
-                {
-                    ImageTrackingRoot.SetActive(true);
-                    var imageTarget = ImageTrackingRoot.GetComponent<ZapparImageTrackingTarget>();
-                    if (imageTarget != null && imageTarget.ImageTrackerPtr != null)
-                    {
-                        Z.ImageTrackerEnabledSet(imageTarget.ImageTrackerPtr.Value, true);
-                    }
-
-                    if (ZapparCamera.Instance != null)
-                    {
-                        ZapparCamera.Instance.AnchorOrigin = null;
-                        ZapparCamera.Instance.CameraAttitudeFromGyro = true;
-                    }
-                }
+                SetInstantTrackerActive(false);
+                SetImageTrackerActive(true);
             }
             else
             {
-                if (ImageTrackingRoot != null)
-                {
-                    var imageTarget = ImageTrackingRoot.GetComponent<ZapparImageTrackingTarget>();
-                    if (imageTarget != null && imageTarget.ImageTrackerPtr != null)
-                    {
-                        Z.ImageTrackerEnabledSet(imageTarget.ImageTrackerPtr.Value, false);
-                    }
-                    ImageTrackingRoot.SetActive(false);
-                }
-
-                if (InstantTrackingRoot != null)
-                {
-                    InstantTrackingRoot.SetActive(true);
-                    var instantTargetComp = InstantTrackingRoot.GetComponent<ZapparInstantTrackingTarget>();
-                    if (instantTargetComp != null && instantTargetComp.InstantTracker != null)
-                    {
-                        Z.InstantWorldTrackerEnabledSet(instantTargetComp.InstantTracker.Value, true);
-                    }
-
-                    if (ZapparCamera.Instance != null)
-                    {
-                        ZapparCamera.Instance.AnchorOrigin = instantTargetComp;
-                        ZapparCamera.Instance.CameraAttitudeFromGyro = false;
-                    }
-                }
+                SetImageTrackerActive(false);
+                SetInstantTrackerActive(true);
             }
 
-            Debug.Log($"[ViMARA AR] Modo aplicado: {m_currentMode}");
+            Debug.Log($"[ViMARA AR] Modo activo: {m_currentMode}");
+        }
+
+        private void SetInstantTrackerActive(bool active)
+        {
+            if (InstantTrackingRoot == null) return;
+
+            var instantTarget = InstantTrackingRoot.GetComponent<ZapparInstantTrackingTarget>();
+            if (!active)
+            {
+                if (instantTarget != null && instantTarget.InstantTracker != null)
+                {
+                    Z.InstantWorldTrackerEnabledSet(instantTarget.InstantTracker.Value, false);
+                }
+                InstantTrackingRoot.SetActive(false);
+                return;
+            }
+
+            InstantTrackingRoot.SetActive(true);
+            if (instantTarget != null && instantTarget.InstantTracker != null)
+            {
+                Z.InstantWorldTrackerEnabledSet(instantTarget.InstantTracker.Value, true);
+            }
+
+            if (ZapparCamera.Instance != null)
+            {
+                ZapparCamera.Instance.AnchorOrigin = instantTarget;
+                ZapparCamera.Instance.CameraAttitudeFromGyro = false;
+            }
+        }
+
+        private void SetImageTrackerActive(bool active)
+        {
+            if (ImageTrackingRoot == null) return;
+
+            var imageTarget = ImageTrackingRoot.GetComponent<ZapparImageTrackingTarget>();
+            if (!active)
+            {
+                if (imageTarget != null && imageTarget.ImageTrackerPtr != null)
+                {
+                    Z.ImageTrackerEnabledSet(imageTarget.ImageTrackerPtr.Value, false);
+                }
+                ImageTrackingRoot.SetActive(false);
+                return;
+            }
+
+            ImageTrackingRoot.SetActive(true);
+            if (imageTarget != null && imageTarget.ImageTrackerPtr != null)
+            {
+                Z.ImageTrackerEnabledSet(imageTarget.ImageTrackerPtr.Value, true);
+            }
+
+            if (ZapparCamera.Instance != null)
+            {
+                ZapparCamera.Instance.AnchorOrigin = null;
+                ZapparCamera.Instance.CameraAttitudeFromGyro = true;
+            }
         }
     }
 }

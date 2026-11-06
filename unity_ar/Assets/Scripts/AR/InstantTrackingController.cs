@@ -5,25 +5,25 @@ using Zappar;
 namespace ViMARA.AR
 {
     /// <summary>
-    /// Controlador optimizado para Zappar Instant Tracking en ViMARA.
-    /// Características:
-    /// 1. Muestra la retícula circular de puntos de escaneo de superficie antes de colocar.
-    /// 2. Oculta la maqueta 3D hasta que el usuario toca la pantalla para fijarla.
-    /// 3. Si la maqueta ya está colocada y el usuario toca nuevamente la pantalla (toque corto sin arrastrar ni hacer zoom),
-    ///    el modelo se "destraba" y vuelve al modo de escaneo para reubicarlo en otro punto.
-    /// 4. Habilita manipulación táctil (rotación 360° con 1 dedo y zoom con 2 dedos) sobre la maqueta fijada.
+    /// Controlador de seguimiento por superficie (Instant World Tracking SLAM) para ViMARA.
+    /// Gestiona:
+    /// 1. Retícula circular animada y malla de puntos durante la fase de escaneo.
+    /// 2. Fijación de la maqueta al tocar la superficie y destrabe mediante toque corto (Tap vs Drag/Pinch).
+    /// 3. Activación de manipulación táctil (rotación 360° y pellizco de escala) cuando la maqueta está colocada.
     /// </summary>
     [RequireComponent(typeof(ZapparInstantTrackingTarget))]
     public class InstantTrackingController : MonoBehaviour
     {
+        private const float TapMaxDurationSeconds = 0.35f;
+        private const float TouchTapMaxDistancePx = 18f;
+        private const float MouseTapMaxDistancePx = 10f;
+        private const float PlacementCooldownSeconds = 0.25f;
+
         private ZapparInstantTrackingTarget m_trackingTarget;
 
         [Header("Configuración de Interacción")]
         public bool AllowTouchToggle = true;
         public KeyCode ResetKey = KeyCode.Space;
-
-        [Header("Calibración Ergonómica Inicial")]
-        public Vector3 SurfaceOffset = new Vector3(0, -0.45f, -1.4f);
 
         [Header("Visualizador de Superficie (Dot Grid / Scanning Reticle)")]
         public bool ShowPlaneVisualizer = true;
@@ -33,7 +33,7 @@ namespace ViMARA.AR
         [Header("Referencia a la Maqueta / Modelo 3D")]
         public Transform ModelContainer;
 
-        // Visualizadores procedurales originales (retícula circular + malla de puntos)
+        // Componentes de la retícula visual de escaneo
         private GameObject m_visualizerRoot;
         private LineRenderer m_outerRing;
         private LineRenderer m_innerRing;
@@ -43,16 +43,16 @@ namespace ViMARA.AR
         private Material m_innerMaterial;
         private Material m_dotGridMaterial;
 
-        // Detección de toque simple (Tap) vs Arrastre/Zoom para destrabar el modelo
+        // Estado para discriminar un toque corto (Tap de destrabe) frente a arrastre o zoom
         private Vector2 m_touchStartPos;
         private float m_touchStartTime;
-        private bool m_potentialTap = false;
-        private bool m_multiTouchOccurred = false;
+        private bool m_potentialTap;
+        private bool m_multiTouchOccurred;
         private float m_lastPlacementChangeTime = -1f;
 
         private Vector3 m_mouseStartPos;
         private float m_mouseStartTime;
-        private bool m_potentialMouseTap = false;
+        private bool m_potentialMouseTap;
 
         private void Awake()
         {
@@ -60,7 +60,6 @@ namespace ViMARA.AR
             m_trackingTarget = GetComponent<ZapparInstantTrackingTarget>();
             if (m_trackingTarget != null)
             {
-                // Permitir que ZapparInstantTrackingTarget gestione nativamente el offset del anclaje antes de colocar
                 m_trackingTarget.MoveAnchorOnZ = false;
             }
             SetupSurfaceVisualizer();
@@ -68,27 +67,37 @@ namespace ViMARA.AR
 
         private void OnEnable()
         {
-            if (m_trackingTarget != null && m_trackingTarget.InstantTracker != null)
-            {
-                Z.InstantWorldTrackerEnabledSet(m_trackingTarget.InstantTracker.Value, true);
-            }
+            SetNativeInstantTrackerEnabled(true);
         }
 
         private void OnDisable()
         {
-            if (m_trackingTarget != null && m_trackingTarget.InstantTracker != null)
-            {
-                Z.InstantWorldTrackerEnabledSet(m_trackingTarget.InstantTracker.Value, false);
-            }
+            SetNativeInstantTrackerEnabled(false);
         }
 
         private void Start()
         {
-            FindAndSetupModel();
+            ResolveModelContainer();
             UpdateVisualState();
         }
 
-        private void FindAndSetupModel()
+        private void Update()
+        {
+            if (m_trackingTarget == null || m_trackingTarget.InstantTracker == null) return;
+
+            HandleInput();
+            AnimateScanningReticle();
+        }
+
+        private void SetNativeInstantTrackerEnabled(bool enabled)
+        {
+            if (m_trackingTarget != null && m_trackingTarget.InstantTracker != null)
+            {
+                Z.InstantWorldTrackerEnabledSet(m_trackingTarget.InstantTracker.Value, enabled);
+            }
+        }
+
+        private void ResolveModelContainer()
         {
             if (ModelContainer == null)
             {
@@ -103,14 +112,13 @@ namespace ViMARA.AR
                 }
             }
 
-            if (ModelContainer != null)
+            if (ModelContainer != null && ModelContainer.GetComponent<TouchManipulationController>() == null)
             {
-                if (ModelContainer.GetComponent<TouchManipulationController>() == null)
-                {
-                    ModelContainer.gameObject.AddComponent<TouchManipulationController>();
-                }
+                ModelContainer.gameObject.AddComponent<TouchManipulationController>();
             }
         }
+
+        #region Visualizador de Escaneo de Superficie
 
         private void SetupSurfaceVisualizer()
         {
@@ -118,27 +126,30 @@ namespace ViMARA.AR
 
             m_visualizerRoot = new GameObject("SurfaceScanningVisualizer");
             m_visualizerRoot.transform.SetParent(transform, false);
-            m_visualizerRoot.transform.localPosition = new Vector3(0, 0.005f, 0);
+            m_visualizerRoot.transform.localPosition = new Vector3(0f, 0.005f, 0f);
             m_visualizerRoot.transform.localRotation = Quaternion.identity;
 
-            Shader unlitShader = Shader.Find("Universal Render Pipeline/Unlit");
-            if (unlitShader == null) unlitShader = Shader.Find("Sprites/Default");
-            if (unlitShader == null) unlitShader = Shader.Find("Unlit/Color");
+            Shader unlitShader = Shader.Find("Universal Render Pipeline/Unlit")
+                              ?? Shader.Find("Sprites/Default")
+                              ?? Shader.Find("Unlit/Color");
 
             m_ringMaterial = new Material(unlitShader) { color = ThemeColor };
-            m_innerMaterial = new Material(unlitShader) { color = new Color(ThemeColor.r, ThemeColor.g, ThemeColor.b, 0.45f) };
+            m_innerMaterial = new Material(unlitShader)
+            {
+                color = new Color(ThemeColor.r, ThemeColor.g, ThemeColor.b, 0.45f)
+            };
 
             // 1. Aro exterior
             GameObject outerObj = new GameObject("OuterRing");
             outerObj.transform.SetParent(m_visualizerRoot.transform, false);
             m_outerRing = outerObj.AddComponent<LineRenderer>();
-            ConfigureLine(m_outerRing, m_ringMaterial, 0.015f, 48, ReticleRadius);
+            ConfigureCircleLine(m_outerRing, m_ringMaterial, 0.015f, 48, ReticleRadius);
 
             // 2. Aro interior pulsante
             GameObject innerObj = new GameObject("InnerRing");
             innerObj.transform.SetParent(m_visualizerRoot.transform, false);
             m_innerRing = innerObj.AddComponent<LineRenderer>();
-            ConfigureLine(m_innerRing, m_innerMaterial, 0.008f, 32, ReticleRadius * 0.5f);
+            ConfigureCircleLine(m_innerRing, m_innerMaterial, 0.008f, 32, ReticleRadius * 0.5f);
 
             // 3. Cruz central
             GameObject crosshairObj = new GameObject("Crosshair");
@@ -149,26 +160,29 @@ namespace ViMARA.AR
             m_crosshair.endWidth = 0.01f;
             m_crosshair.material = m_ringMaterial;
             m_crosshair.positionCount = 5;
-            float ch = ReticleRadius * 0.22f;
-            m_crosshair.SetPositions(new Vector3[]
+            float halfArm = ReticleRadius * 0.22f;
+            m_crosshair.SetPositions(new[]
             {
-                new Vector3(-ch, 0, 0),
-                new Vector3(ch, 0, 0),
-                new Vector3(0, 0, 0),
-                new Vector3(0, 0, -ch),
-                new Vector3(0, 0, ch)
+                new Vector3(-halfArm, 0f, 0f),
+                new Vector3(halfArm, 0f, 0f),
+                Vector3.zero,
+                new Vector3(0f, 0f, -halfArm),
+                new Vector3(0f, 0f, halfArm)
             });
 
             // 4. Malla de puntos (Dot Grid Plane)
             m_dotGridPlane = GameObject.CreatePrimitive(PrimitiveType.Quad);
             m_dotGridPlane.name = "DotGridPlane";
             m_dotGridPlane.transform.SetParent(m_visualizerRoot.transform, false);
-            m_dotGridPlane.transform.localRotation = Quaternion.Euler(90f, 0, 0);
+            m_dotGridPlane.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
             m_dotGridPlane.transform.localScale = Vector3.one * (ReticleRadius * 2.2f);
             Destroy(m_dotGridPlane.GetComponent<Collider>());
 
             Texture2D dotTex = Resources.Load<Texture2D>("PlanePatternDot");
-            m_dotGridMaterial = new Material(unlitShader) { color = new Color(ThemeColor.r, ThemeColor.g, ThemeColor.b, 0.35f) };
+            m_dotGridMaterial = new Material(unlitShader)
+            {
+                color = new Color(ThemeColor.r, ThemeColor.g, ThemeColor.b, 0.35f)
+            };
             if (dotTex != null)
             {
                 m_dotGridMaterial.mainTexture = dotTex;
@@ -176,7 +190,7 @@ namespace ViMARA.AR
             m_dotGridPlane.GetComponent<MeshRenderer>().material = m_dotGridMaterial;
         }
 
-        private void ConfigureLine(LineRenderer lr, Material mat, float width, int segments, float radius)
+        private static void ConfigureCircleLine(LineRenderer lr, Material mat, float width, int segments, float radius)
         {
             lr.useWorldSpace = false;
             lr.loop = true;
@@ -184,11 +198,25 @@ namespace ViMARA.AR
             lr.endWidth = width;
             lr.material = mat;
             lr.positionCount = segments;
+
             float step = 360f / segments;
             for (int i = 0; i < segments; i++)
             {
                 float rad = Mathf.Deg2Rad * (i * step);
-                lr.SetPosition(i, new Vector3(Mathf.Sin(rad) * radius, 0, Mathf.Cos(rad) * radius));
+                lr.SetPosition(i, new Vector3(Mathf.Sin(rad) * radius, 0f, Mathf.Cos(rad) * radius));
+            }
+        }
+
+        private void AnimateScanningReticle()
+        {
+            if (m_visualizerRoot == null || !m_visualizerRoot.activeSelf) return;
+
+            m_visualizerRoot.transform.Rotate(Vector3.up, 20f * Time.deltaTime, Space.Self);
+
+            if (m_innerRing != null)
+            {
+                float pulse = 0.8f + Mathf.PingPong(Time.time * 0.7f, 0.35f);
+                m_innerRing.transform.localScale = new Vector3(pulse, 1f, pulse);
             }
         }
 
@@ -196,42 +224,24 @@ namespace ViMARA.AR
         {
             bool isPlaced = m_trackingTarget != null && m_trackingTarget.UserHasPlaced;
 
-            // Retícula de escaneo: activa SOLO cuando NO está fijado
             if (m_visualizerRoot != null)
             {
                 m_visualizerRoot.SetActive(!isPlaced && ShowPlaneVisualizer);
             }
 
-            // Maqueta 3D: activa SOLO cuando el usuario la ha FIJADO sobre el plano
             if (ModelContainer != null)
             {
                 ModelContainer.gameObject.SetActive(isPlaced);
             }
         }
 
-        private void Update()
-        {
-            if (m_trackingTarget == null || m_trackingTarget.InstantTracker == null) return;
+        #endregion
 
-            HandleInput();
-
-            // Animación suave de la retícula de escaneo mientras busca superficie
-            if (m_visualizerRoot != null && m_visualizerRoot.activeSelf)
-            {
-                m_visualizerRoot.transform.Rotate(Vector3.up, 20f * Time.deltaTime, Space.Self);
-
-                float pulse = 0.8f + Mathf.PingPong(Time.time * 0.7f, 0.35f);
-                if (m_innerRing != null)
-                {
-                    m_innerRing.transform.localScale = new Vector3(pulse, 1f, pulse);
-                }
-            }
-        }
+        #region Entrada de Usuario (Colocación y Destrabe por Toque Corto)
 
         private void HandleInput()
         {
-            bool isResetKeyPressed = Input.GetKeyDown(ResetKey) || Input.GetKeyDown(KeyCode.R);
-            if (isResetKeyPressed && m_trackingTarget.UserHasPlaced)
+            if ((Input.GetKeyDown(ResetKey) || Input.GetKeyDown(KeyCode.R)) && m_trackingTarget.UserHasPlaced)
             {
                 ResetPlacement();
                 return;
@@ -239,22 +249,31 @@ namespace ViMARA.AR
 
             if (!AllowTouchToggle) return;
 
-            // --- 1. Entrada Táctil (Móvil) ---
             if (Input.touchCount > 0)
             {
                 m_potentialMouseTap = false;
+                HandleMobileTouchInput();
+                return;
+            }
 
-                if (Input.touchCount >= 2)
-                {
-                    m_multiTouchOccurred = true;
-                    m_potentialTap = false;
-                    return;
-                }
+            m_multiTouchOccurred = false;
+            HandleDesktopMouseInput();
+        }
 
-                Touch touch = Input.GetTouch(0);
+        private void HandleMobileTouchInput()
+        {
+            if (Input.touchCount >= 2)
+            {
+                m_multiTouchOccurred = true;
+                m_potentialTap = false;
+                return;
+            }
 
-                if (touch.phase == TouchPhase.Began)
-                {
+            Touch touch = Input.GetTouch(0);
+
+            switch (touch.phase)
+            {
+                case TouchPhase.Began:
                     if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject(touch.fingerId))
                     {
                         m_potentialTap = false;
@@ -267,56 +286,46 @@ namespace ViMARA.AR
 
                     if (!m_trackingTarget.UserHasPlaced)
                     {
-                        // Si aún NO está colocado, fijar inmediatamente al tocar la pantalla
-                        if (Time.unscaledTime - m_lastPlacementChangeTime > 0.25f)
-                        {
-                            m_trackingTarget.PlaceTrackerAnchor();
-                            m_lastPlacementChangeTime = Time.unscaledTime;
-                            UpdateVisualState();
-                        }
+                        TryPlaceAnchor();
                         m_potentialTap = false;
                     }
                     else
                     {
-                        // Si YA está colocado, esperamos a TouchPhase.Ended para distinguir un toque corto (destrabar) de un arrastre (rotar)
                         m_potentialTap = true;
                     }
-                }
-                else if (touch.phase == TouchPhase.Moved)
-                {
-                    if (m_potentialTap && Vector2.Distance(touch.position, m_touchStartPos) > 18f)
+                    break;
+
+                case TouchPhase.Moved:
+                    if (m_potentialTap && Vector2.Distance(touch.position, m_touchStartPos) > TouchTapMaxDistancePx)
                     {
-                        // El usuario está deslizando el dedo para rotar el modelo, no es un toque de destrabe
                         m_potentialTap = false;
                     }
-                }
-                else if (touch.phase == TouchPhase.Ended)
-                {
+                    break;
+
+                case TouchPhase.Ended:
                     if (m_potentialTap && !m_multiTouchOccurred && m_trackingTarget.UserHasPlaced)
                     {
                         float duration = Time.unscaledTime - m_touchStartTime;
                         float moveDist = Vector2.Distance(touch.position, m_touchStartPos);
 
-                        if (duration < 0.35f && moveDist <= 18f && (Time.unscaledTime - m_lastPlacementChangeTime > 0.25f))
+                        if (duration < TapMaxDurationSeconds &&
+                            moveDist <= TouchTapMaxDistancePx &&
+                            HasPassedPlacementCooldown())
                         {
                             ResetPlacement();
                         }
                     }
                     m_potentialTap = false;
-                }
-                else if (touch.phase == TouchPhase.Canceled)
-                {
+                    break;
+
+                case TouchPhase.Canceled:
                     m_potentialTap = false;
-                }
-
-                return;
+                    break;
             }
-            else
-            {
-                m_multiTouchOccurred = false;
-            }
+        }
 
-            // --- 2. Entrada de Mouse (Desktop) ---
+        private void HandleDesktopMouseInput()
+        {
             if (Input.GetMouseButtonDown(0))
             {
                 if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
@@ -330,12 +339,7 @@ namespace ViMARA.AR
 
                 if (!m_trackingTarget.UserHasPlaced)
                 {
-                    if (Time.unscaledTime - m_lastPlacementChangeTime > 0.25f)
-                    {
-                        m_trackingTarget.PlaceTrackerAnchor();
-                        m_lastPlacementChangeTime = Time.unscaledTime;
-                        UpdateVisualState();
-                    }
+                    TryPlaceAnchor();
                     m_potentialMouseTap = false;
                 }
                 else
@@ -345,7 +349,7 @@ namespace ViMARA.AR
             }
             else if (Input.GetMouseButton(0) && m_potentialMouseTap)
             {
-                if (Vector3.Distance(Input.mousePosition, m_mouseStartPos) > 10f)
+                if (Vector3.Distance(Input.mousePosition, m_mouseStartPos) > MouseTapMaxDistancePx)
                 {
                     m_potentialMouseTap = false;
                 }
@@ -357,7 +361,9 @@ namespace ViMARA.AR
                     float duration = Time.unscaledTime - m_mouseStartTime;
                     float moveDist = Vector3.Distance(Input.mousePosition, m_mouseStartPos);
 
-                    if (duration < 0.35f && moveDist <= 10f && (Time.unscaledTime - m_lastPlacementChangeTime > 0.25f))
+                    if (duration < TapMaxDurationSeconds &&
+                        moveDist <= MouseTapMaxDistancePx &&
+                        HasPassedPlacementCooldown())
                     {
                         ResetPlacement();
                     }
@@ -366,15 +372,30 @@ namespace ViMARA.AR
             }
         }
 
+        private bool HasPassedPlacementCooldown()
+        {
+            return Time.unscaledTime - m_lastPlacementChangeTime > PlacementCooldownSeconds;
+        }
+
+        private void TryPlaceAnchor()
+        {
+            if (!HasPassedPlacementCooldown()) return;
+
+            m_trackingTarget.PlaceTrackerAnchor();
+            m_lastPlacementChangeTime = Time.unscaledTime;
+            UpdateVisualState();
+        }
+
         public void ResetPlacement()
         {
-            if (m_trackingTarget != null)
-            {
-                m_trackingTarget.ResetTrackerAnchor();
-                m_lastPlacementChangeTime = Time.unscaledTime;
-                UpdateVisualState();
-            }
+            if (m_trackingTarget == null) return;
+
+            m_trackingTarget.ResetTrackerAnchor();
+            m_lastPlacementChangeTime = Time.unscaledTime;
+            UpdateVisualState();
         }
+
+        #endregion
 
         private void OnDestroy()
         {

@@ -4,10 +4,10 @@ using UnityEngine.EventSystems;
 namespace ViMARA.AR
 {
     /// <summary>
-    /// Controlador de manipulación táctil intuitivo para maquetas en WebAR.
+    /// Controlador de manipulación táctil y de escritorio para maquetas 3D en WebAR.
     /// Soporta:
     /// - 1 Dedo (arrastre horizontal): Rotación 360° en eje Y.
-    /// - 2 Dedos (pellizco / pinch): Escalado / Zoom suave con límites ergonómicos, sin rotar accidentalmente.
+    /// - 2 Dedos (pellizco / pinch): Escalado uniforme con bloqueo de rotación accidental al soltar un dedo.
     /// - Mouse (Desktop): Clic izquierdo + arrastre para rotar, rueda del ratón para zoom.
     /// </summary>
     public class TouchManipulationController : MonoBehaviour
@@ -29,20 +29,18 @@ namespace ViMARA.AR
         private float m_currentYawOffset;
         private Vector3 m_targetScale;
         private Quaternion m_externalBaseRotation = Quaternion.identity;
-        private bool m_useExternalBaseRotation = false;
+        private bool m_useExternalBaseRotation;
 
         private Vector2 m_lastTouchPos;
         private Vector3 m_lastMousePos;
         private float m_lastPinchDistance;
-        private bool m_isInteracting = false;
-        private bool m_isPinching = false;
-        private bool m_wasPinching = false;
-        private bool m_isMouseInteracting = false;
+        private bool m_isInteracting;
+        private bool m_isPinching;
+        private bool m_wasPinching;
+        private bool m_isMouseInteracting;
 
         private void Awake()
         {
-            // Evitar que los toques móviles emulen eventos de mouse (GetMouseButton) simultáneamente,
-            // lo cual provocaba giros bruscos al hacer zoom con 2 dedos.
             Input.simulateMouseWithTouches = false;
         }
 
@@ -84,7 +82,7 @@ namespace ViMARA.AR
 
         private void HandleTouchInput()
         {
-            // Si hay 2 o más dedos en pantalla: MODO ZOOM (Pinch) EXCLUSIVO, prohibido rotar
+            // Modo Zoom exclusivo con 2 o más dedos (prohibido rotar durante pellizco)
             if (Input.touchCount >= 2)
             {
                 m_wasPinching = true;
@@ -92,30 +90,18 @@ namespace ViMARA.AR
 
                 Touch touch0 = Input.GetTouch(0);
                 Touch touch1 = Input.GetTouch(1);
-
                 float currentDistance = Vector2.Distance(touch0.position, touch1.position);
 
                 if (!m_isPinching || touch0.phase == TouchPhase.Began || touch1.phase == TouchPhase.Began)
                 {
-                    if (EventSystem.current != null &&
-                        (EventSystem.current.IsPointerOverGameObject(touch0.fingerId) ||
-                         EventSystem.current.IsPointerOverGameObject(touch1.fingerId)))
-                    {
-                        return;
-                    }
+                    if (IsPointerOverUI(touch0.fingerId) || IsPointerOverUI(touch1.fingerId)) return;
                     m_lastPinchDistance = currentDistance;
                     m_isPinching = true;
                 }
                 else if (m_isPinching && (touch0.phase == TouchPhase.Moved || touch1.phase == TouchPhase.Moved))
                 {
                     float deltaDistance = currentDistance - m_lastPinchDistance;
-                    float scaleFactor = 1f + (deltaDistance * PinchZoomSpeed);
-
-                    float newScaleX = Mathf.Clamp(m_targetScale.x * scaleFactor, MinScale, MaxScale);
-                    float newScaleY = Mathf.Clamp(m_targetScale.y * scaleFactor, MinScale, MaxScale);
-                    float newScaleZ = Mathf.Clamp(m_targetScale.z * scaleFactor, MinScale, MaxScale);
-
-                    m_targetScale = new Vector3(newScaleX, newScaleY, newScaleZ);
+                    ApplyScaleFactor(1f + (deltaDistance * PinchZoomSpeed));
                     m_lastPinchDistance = currentDistance;
                 }
                 else if (touch0.phase == TouchPhase.Ended || touch0.phase == TouchPhase.Canceled ||
@@ -126,8 +112,7 @@ namespace ViMARA.AR
                 return;
             }
 
-            // Si queda 1 solo dedo pero veníamos de un gesto de 2 dedos (pinch),
-            // ignoramos la rotación hasta que el usuario levante ambos dedos por completo.
+            // Si queda 1 dedo tras un pellizco de 2 dedos, bloquear rotación hasta soltar ambos dedos
             if (Input.touchCount == 1)
             {
                 m_isPinching = false;
@@ -142,7 +127,7 @@ namespace ViMARA.AR
 
                 if (touch.phase == TouchPhase.Began)
                 {
-                    if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject(touch.fingerId)) return;
+                    if (IsPointerOverUI(touch.fingerId)) return;
                     m_lastTouchPos = touch.position;
                     m_isInteracting = true;
                 }
@@ -163,7 +148,7 @@ namespace ViMARA.AR
         {
             if (Input.GetMouseButtonDown(0))
             {
-                if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
+                if (IsMouseOverUI()) return;
                 m_lastMousePos = Input.mousePosition;
                 m_isMouseInteracting = true;
             }
@@ -184,18 +169,34 @@ namespace ViMARA.AR
             float scroll = Input.GetAxis("Mouse ScrollWheel");
             if (Mathf.Abs(scroll) > 0.001f)
             {
-                if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
-                float scaleFactor = 1f + (scroll * ScrollZoomSpeed);
-                float newScaleX = Mathf.Clamp(m_targetScale.x * scaleFactor, MinScale, MaxScale);
-                float newScaleY = Mathf.Clamp(m_targetScale.y * scaleFactor, MinScale, MaxScale);
-                float newScaleZ = Mathf.Clamp(m_targetScale.z * scaleFactor, MinScale, MaxScale);
-                m_targetScale = new Vector3(newScaleX, newScaleY, newScaleZ);
+                if (IsMouseOverUI()) return;
+                ApplyScaleFactor(1f + (scroll * ScrollZoomSpeed));
             }
+        }
+
+        private void ApplyScaleFactor(float scaleFactor)
+        {
+            m_targetScale = new Vector3(
+                Mathf.Clamp(m_targetScale.x * scaleFactor, MinScale, MaxScale),
+                Mathf.Clamp(m_targetScale.y * scaleFactor, MinScale, MaxScale),
+                Mathf.Clamp(m_targetScale.z * scaleFactor, MinScale, MaxScale)
+            );
+        }
+
+        private static bool IsPointerOverUI(int fingerId)
+        {
+            return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject(fingerId);
+        }
+
+        private static bool IsMouseOverUI()
+        {
+            return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
         }
 
         private void ApplySmoothTransform()
         {
-            m_currentYawOffset = Mathf.Lerp(m_currentYawOffset, m_targetRotationY, Time.deltaTime * SmoothDamping);
+            float factor = Time.deltaTime * SmoothDamping;
+            m_currentYawOffset = Mathf.Lerp(m_currentYawOffset, m_targetRotationY, factor);
 
             if (m_useExternalBaseRotation)
             {
@@ -204,10 +205,10 @@ namespace ViMARA.AR
             else
             {
                 Quaternion targetRotation = Quaternion.Euler(0f, m_currentYawOffset, 0f);
-                transform.localRotation = Quaternion.Slerp(transform.localRotation, targetRotation, Time.deltaTime * SmoothDamping);
+                transform.localRotation = Quaternion.Slerp(transform.localRotation, targetRotation, factor);
             }
 
-            transform.localScale = Vector3.Lerp(transform.localScale, m_targetScale, Time.deltaTime * SmoothDamping);
+            transform.localScale = Vector3.Lerp(transform.localScale, m_targetScale, factor);
         }
 
         public void ResetTransformation(Vector3 defaultScale)

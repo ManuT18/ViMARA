@@ -4,51 +4,53 @@ using Zappar;
 namespace ViMARA.AR
 {
     /// <summary>
-    /// Controlador de Anclaje Persistente (World Lock) y Estabilización Adaptativa para Seguimiento por Marcador en ViMARA.
-    /// Características clave:
-    /// 1. Oculta automáticamente el "Preview Object" del marcador en tiempo de ejecución para que nunca se superponga la imagen 2D sobre el marcador físico.
-    /// 2. Filtra micro-vibraciones (jitter/temblor de la cámara) mediante una zona muerta adaptativa (Deadzone + One-Euro style damping) en LateUpdate.
-    /// 3. Se adapta tanto a marcadores apoyados sobre una mesa (horizontales) como colgados en pared (verticales), nivelando la maqueta respecto a la gravedad terrestre cuando el marcador está horizontal.
-    /// 4. Mantiene la maqueta fija en el mundo (World Lock) cuando la cámara se aleja o deja de ver el marcador.
+    /// Controlador de Anclaje Persistente (World Lock) y Estabilización Adaptativa para Seguimiento por Marcador.
+    /// Características:
+    /// 1. Oculta automáticamente el "Preview Object" del marcador para no superponer la textura 2D en cámara.
+    /// 2. Filtra micro-vibraciones (jitter) mediante zona muerta adaptativa (Deadzone) en LateUpdate.
+    /// 3. Nivela automáticamente la maqueta respecto a la gravedad cuando el marcador reposa horizontalmente sobre una mesa.
+    /// 4. Mantiene la maqueta anclada en el espacio (World Lock) si el marcador sale del encuadre.
     /// </summary>
     [RequireComponent(typeof(ZapparImageTrackingTarget))]
     public class PersistentMarkerController : MonoBehaviour
     {
+        private const float HorizontalMarkerMaxTiltDegrees = 38f;
+        private const int FastConvergenceFrameCount = 4;
+        private const float FastConvergenceLerpFactor = 0.65f;
+
         private ZapparImageTrackingTarget m_imageTarget;
+        private TouchManipulationController m_touchController;
 
         [Header("Elevación y Nivelación")]
         [Tooltip("Elevación sutil sobre la superficie del marcador.")]
         public float ElevationOffset = 0.01f;
 
-        [Tooltip("Si el marcador está apoyado horizontalmente (< 35° respecto a la gravedad), nivela la maqueta perfectamente con el suelo para evitar inclinaciones por distorsión de lente.")]
+        [Tooltip("Si el marcador está apoyado horizontalmente (< 38° respecto a la gravedad), nivela la maqueta con el suelo para evitar inclinaciones ópticas.")]
         public bool AutoLevelHorizontalMarkers = true;
 
         [Header("Filtro Anti-Temblor (Estabilización Adaptativa)")]
-        [Tooltip("Velocidad base de suavizado cuando el marcador se mueve.")]
+        [Tooltip("Velocidad base de suavizado cuando el marcador se desplaza.")]
         public float TrackingLerpSpeed = 10f;
 
-        [Tooltip("Umbral en metros por debajo del cual se filtran micro-vibraciones del sensor de cámara.")]
+        [Tooltip("Umbral en metros por debajo del cual se amortiguan micro-vibraciones de cámara.")]
         public float PositionDeadzone = 0.008f;
 
-        [Tooltip("Umbral en grados por debajo del cual se filtran micro-oscilaciones angulares.")]
+        [Tooltip("Umbral en grados por debajo del cual se amortiguan micro-oscilaciones angulares.")]
         public float RotationDeadzoneAngle = 1.8f;
 
         [Header("Contenedor de la Maqueta 3D")]
         [Tooltip("Transform de la maqueta a anclar en el mundo.")]
         public Transform TargetModel;
 
-        private bool m_hasBeenDetectedOnce = false;
-        private bool m_isCurrentlySeen = false;
+        private bool m_hasBeenDetectedOnce;
+        private bool m_isCurrentlySeen;
         private Vector3 m_lastValidWorldPos;
         private Quaternion m_lastValidWorldRot = Quaternion.identity;
-        private Vector3 m_lastValidWorldScale = Vector3.one;
-        private int m_seenStableFrames = 0;
+        private int m_seenStableFrames;
 
         private void Awake()
         {
             m_imageTarget = GetComponent<ZapparImageTrackingTarget>();
-
-            // 1. Ocultar cualquier objeto de vista previa del marcador (Preview Object) para que NO se renderice la imagen del marcador en AR
             HideMarkerPreviewObjects();
 
             if (m_imageTarget != null)
@@ -64,13 +66,54 @@ namespace ViMARA.AR
             SetupModel();
         }
 
+        private void OnEnable()
+        {
+            HideMarkerPreviewObjects();
+            if (m_imageTarget != null)
+            {
+                if (m_imageTarget.ImageTrackerPtr != null)
+                {
+                    Z.ImageTrackerEnabledSet(m_imageTarget.ImageTrackerPtr.Value, true);
+                }
+                else if (ZapparCamera.Instance != null && ZapparCamera.Instance.PipelineIsInitialized)
+                {
+                    m_imageTarget.OnZapparInitialized(ZapparCamera.Instance.GetPipeline);
+                }
+            }
+
+            if (TargetModel != null && m_hasBeenDetectedOnce)
+            {
+                TargetModel.gameObject.SetActive(true);
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (m_imageTarget != null && m_imageTarget.ImageTrackerPtr != null)
+            {
+                Z.ImageTrackerEnabledSet(m_imageTarget.ImageTrackerPtr.Value, false);
+            }
+
+            if (TargetModel != null)
+            {
+                TargetModel.gameObject.SetActive(false);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (m_imageTarget != null)
+            {
+                m_imageTarget.OnSeenEvent.RemoveListener(OnMarkerSeen);
+                m_imageTarget.OnNotSeenEvent.RemoveListener(OnMarkerNotSeen);
+            }
+        }
+
         private void HideMarkerPreviewObjects()
         {
             if (m_imageTarget != null && m_imageTarget.PreviewImageObject != null)
             {
-                m_imageTarget.PreviewImageObject.SetActive(false);
-                Renderer r = m_imageTarget.PreviewImageObject.GetComponent<Renderer>();
-                if (r != null) r.enabled = false;
+                DisablePreviewObject(m_imageTarget.PreviewImageObject);
             }
 
             for (int i = 0; i < transform.childCount; i++)
@@ -78,11 +121,16 @@ namespace ViMARA.AR
                 Transform child = transform.GetChild(i);
                 if (child.name.Contains("Preview"))
                 {
-                    child.gameObject.SetActive(false);
-                    Renderer r = child.GetComponent<Renderer>();
-                    if (r != null) r.enabled = false;
+                    DisablePreviewObject(child.gameObject);
                 }
             }
+        }
+
+        private static void DisablePreviewObject(GameObject previewObj)
+        {
+            previewObj.SetActive(false);
+            Renderer r = previewObj.GetComponent<Renderer>();
+            if (r != null) r.enabled = false;
         }
 
         private void SetupModel()
@@ -100,55 +148,20 @@ namespace ViMARA.AR
                 }
             }
 
-            if (TargetModel != null)
-            {
-                // Desvincular del padre para que ZapparImageTrackingTarget no sobrescriba su transform con ruido crudo cada frame,
-                // permitiendo que nuestro estabilizador en LateUpdate controle su pose de mundo con precisión absoluta.
-                if (TargetModel.parent == transform)
-                {
-                    TargetModel.SetParent(null, true);
-                }
+            if (TargetModel == null) return;
 
-                // Ocultar la maqueta al inicio hasta que se detecte el marcador por primera vez
-                TargetModel.gameObject.SetActive(false);
+            // Desvincular del padre para evitar que ZapparImageTrackingTarget sobrescriba su transform con ruido crudo cada frame
+            if (TargetModel.parent == transform)
+            {
+                TargetModel.SetParent(null, true);
+            }
 
-                // Añadir manipulación táctil
-                if (TargetModel.GetComponent<TouchManipulationController>() == null)
-                {
-                    TargetModel.gameObject.AddComponent<TouchManipulationController>();
-                }
-            }
-        }
+            TargetModel.gameObject.SetActive(false);
 
-        private void OnEnable()
-        {
-            HideMarkerPreviewObjects();
-            if (m_imageTarget != null)
+            m_touchController = TargetModel.GetComponent<TouchManipulationController>();
+            if (m_touchController == null)
             {
-                if (m_imageTarget.ImageTrackerPtr != null)
-                {
-                    Z.ImageTrackerEnabledSet(m_imageTarget.ImageTrackerPtr.Value, true);
-                }
-                else if (ZapparCamera.Instance != null && ZapparCamera.Instance.PipelineIsInitialized)
-                {
-                    m_imageTarget.OnZapparInitialized(ZapparCamera.Instance.GetPipeline);
-                }
-            }
-            if (TargetModel != null && m_hasBeenDetectedOnce)
-            {
-                TargetModel.gameObject.SetActive(true);
-            }
-        }
-
-        private void OnDisable()
-        {
-            if (m_imageTarget != null && m_imageTarget.ImageTrackerPtr != null)
-            {
-                Z.ImageTrackerEnabledSet(m_imageTarget.ImageTrackerPtr.Value, false);
-            }
-            if (TargetModel != null)
-            {
-                TargetModel.gameObject.SetActive(false);
+                m_touchController = TargetModel.gameObject.AddComponent<TouchManipulationController>();
             }
         }
 
@@ -174,7 +187,7 @@ namespace ViMARA.AR
         {
             m_isCurrentlySeen = false;
             m_seenStableFrames = 0;
-            // IMPORTANTE: NO desactivamos TargetModel. Permanece fijo en m_lastValidWorldPos (World Lock).
+            // World Lock: el modelo permanece activo en m_lastValidWorldPos cuando el marcador sale de vista
         }
 
         private void ComputeDesiredWorldPose(out Vector3 desiredPos, out Quaternion desiredRot)
@@ -182,24 +195,16 @@ namespace ViMARA.AR
             Vector3 markerUp = transform.up;
             Vector3 markerForward = transform.forward;
 
-            // Si el marcador está apoyado sobre una mesa/suelo (inclinación < 38° respecto a Vector3.up),
-            // estabilizamos el vector vertical con la gravedad para eliminar el cabeceo óptico de la cámara.
-            if (AutoLevelHorizontalMarkers && Vector3.Angle(markerUp, Vector3.up) < 38f)
+            if (AutoLevelHorizontalMarkers && Vector3.Angle(markerUp, Vector3.up) < HorizontalMarkerMaxTiltDegrees)
             {
                 Vector3 flatForward = Vector3.ProjectOnPlane(markerForward, Vector3.up);
-                if (flatForward.sqrMagnitude > 0.001f)
-                {
-                    desiredRot = Quaternion.LookRotation(flatForward.normalized, Vector3.up);
-                }
-                else
-                {
-                    desiredRot = transform.rotation;
-                }
+                desiredRot = flatForward.sqrMagnitude > 0.001f
+                    ? Quaternion.LookRotation(flatForward.normalized, Vector3.up)
+                    : transform.rotation;
                 desiredPos = transform.position + (Vector3.up * ElevationOffset);
             }
             else
             {
-                // Marcador en pared o inclinado: respetar orientación 3D completa
                 desiredRot = transform.rotation;
                 desiredPos = transform.position + (markerUp * ElevationOffset);
             }
@@ -217,9 +222,6 @@ namespace ViMARA.AR
                 float posDelta = Vector3.Distance(m_lastValidWorldPos, targetWorldPos);
                 float rotDelta = Quaternion.Angle(m_lastValidWorldRot, targetWorldRot);
 
-                // Factor adaptativo: si el movimiento está dentro de la zona muerta (temblor de mano/cámara),
-                // amortiguamos fuertemente (0.04) para que el modelo luzca clavado como una roca.
-                // Si el usuario mueve el marcador o se desplaza significativamente, interpolamos ágilmente.
                 float posFactor = posDelta < PositionDeadzone
                     ? Mathf.Clamp01(Time.deltaTime * 1.5f)
                     : Mathf.Clamp01(Time.deltaTime * TrackingLerpSpeed * Mathf.Clamp(posDelta * 18f, 0.4f, 1.5f));
@@ -228,23 +230,26 @@ namespace ViMARA.AR
                     ? Mathf.Clamp01(Time.deltaTime * 1.2f)
                     : Mathf.Clamp01(Time.deltaTime * TrackingLerpSpeed * Mathf.Clamp(rotDelta * 0.12f, 0.35f, 1.4f));
 
-                // En los primeros 4 frames tras detectar por primera vez, converger rápido
-                if (m_seenStableFrames <= 4)
+                if (m_seenStableFrames <= FastConvergenceFrameCount)
                 {
-                    posFactor = 0.65f;
-                    rotFactor = 0.65f;
+                    posFactor = FastConvergenceLerpFactor;
+                    rotFactor = FastConvergenceLerpFactor;
                 }
 
                 m_lastValidWorldPos = Vector3.Lerp(m_lastValidWorldPos, targetWorldPos, posFactor);
                 m_lastValidWorldRot = Quaternion.Slerp(m_lastValidWorldRot, targetWorldRot, rotFactor);
             }
 
-            // Aplicar siempre la pose estabilizada en LateUpdate (después de Zappar y antes del render)
             TargetModel.position = m_lastValidWorldPos;
-            var touchCtrl = TargetModel.GetComponent<TouchManipulationController>();
-            if (touchCtrl != null)
+
+            if (m_touchController == null)
             {
-                touchCtrl.SetExternalBaseRotation(m_lastValidWorldRot);
+                m_touchController = TargetModel.GetComponent<TouchManipulationController>();
+            }
+
+            if (m_touchController != null)
+            {
+                m_touchController.SetExternalBaseRotation(m_lastValidWorldRot);
             }
             else
             {
@@ -252,9 +257,6 @@ namespace ViMARA.AR
             }
         }
 
-        /// <summary>
-        /// Reinicia el estado de detección para permitir un nuevo escaneo desde cero.
-        /// </summary>
         public void ResetMarkerAnchor()
         {
             m_hasBeenDetectedOnce = false;
@@ -264,7 +266,6 @@ namespace ViMARA.AR
             {
                 TargetModel.gameObject.SetActive(false);
             }
-            Debug.Log("[ViMARA AR] Anclaje de marcador reiniciado.");
         }
     }
 }
