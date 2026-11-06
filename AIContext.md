@@ -1,37 +1,32 @@
 # Contexto del Proyecto: ViMARA (WebAR)
 
 ## Estado General
-ViMARA (Visualizador de Maquetas de Arquitectura en Realidad Aumentada) es una plataforma WebAR orientada a la visualización inmersiva de modelos arquitectónicos 3D a escala real directamente desde el navegador web móvil (iOS Safari y Android Chrome).
+ViMARA (Visualizador de Maquetas de Arquitectura en Realidad Aumentada) es una plataforma WebAR orientada a la visualización inmersiva de modelos arquitectónicos 3D a escala real directamente desde el navegador web móvil (iOS Safari y Android Chrome), combinando una SPA en React con un motor 3D embebido en Unity WebGL + Zappar Universal AR.
 
 ## Arquitectura y Decisiones
-- **Frontend Web**: React + Vite + React Router + Lucide Icons.
-- **Motor WebAR 3D**: Unity WebGL (URP) + Zappar Universal AR SDK (Soporte Dual: Instant World Tracking SLAM + Image Tracking con World Lock).
-- **Cargador Universal de Modelos 3D (`RuntimeModelLoader.cs`)**:
-  - **Maquetas Procedurales Instantáneas** (`ProceduralSampleBuilder.cs`): Casa Moderna con Piscina (`preset:house`), Torre Residencial Urbana (`preset:tower`) y Pabellón de Exposición (`preset:pavilion`).
-  - **Archivos `.GLB` / `.GLTF`**: Carga asíncrona en tiempo de ejecución mediante **glTFast** (tanto desde URLs externas como desde `Blob URL` subidos desde el dispositivo del usuario).
-  - **Archivos `.OBJ` y `.STL` (ASCII/Binario)** (`RuntimeMeshFormats.cs`): Parser en tiempo de ejecución para mallas exportadas desde SketchUp, AutoCAD, Revit, Rhino o Blender, con conversión de ejes CAD a Unity y sombreado arquitectónico URP.
-  - **Normalización Automática**: Cálculo dinámico de `Bounds` para escalar proporcionalmente cualquier modelo a `0.45m` y apoyar su base exactamente sobre `Y = 0` (sobre el plano o marcador).
-- **Entorno de Despliegue**: Vercel con cabeceras de permisos de sensores (`camera`, `accelerometer`, `gyroscope`, `xr-spatial-tracking`) y compresión WebGL Gzip con Decompression Fallback.
-- **Flujo de Renderizado y Puente JS ↔ C#**: Carga asíncrona de Unity WebGL a través de iframe responsive (`UnityARViewer.jsx`) con paso de parámetros por URL (`?mode=...&model=...&format=...`) y cambio de modelo en caliente vía `postMessage` -> `SendMessage('AR Mode Switcher', 'LoadModelFromJS', payload)`.
+- **Frontend Web (`src/`)**: React 19 + Vite + React Router + Lucide Icons.
+  - **Catálogo y Constantes Centralizadas (`src/constants/arConstants.js`)**: Modos de tracking (`TRACKING_MODES`), formatos admitidos (`SUPPORTED_EXTENSIONS`) y maquetas de prueba (`SAMPLES`).
+  - **Gestión de Estado y Memoria (`src/context/AppProvider.jsx`)**: Administración del modo de tracking y del modelo activo con revocación automática de `Blob URLs` (`URL.revokeObjectURL`) al cambiar de archivo o reiniciar sesión.
+  - **Puente React ↔ Unity (`src/components/UnityARViewer.jsx` y `public/unity_ar/index.html`)**: Carga inicial por parámetros de URL (`?mode=...&model=...&format=...`) y sincronización posterior sin duplicados vía `postMessage` (`LOAD_MODEL`, `SET_MODE`, `RESIZE_VIEWPORT`).
+- **Motor WebAR 3D (`unity_ar/Assets/Scripts/`, ensamblado `ViMARA`)**: Unity WebGL (URP) + Zappar Universal AR SDK:
+  - **Conmutador Dual (`ARTrackingModeSwitcher.cs`)**: Alterna entre seguimiento por superficie (`ZapparInstantTrackingTarget`) y seguimiento por marcador (`ZapparImageTrackingTarget` con `marcador_logo.zpt`), desactivando en C++/WASM el tracker inactivo.
+  - **Seguimiento por Plano (`InstantTrackingController.cs`)**: Retícula circular animada y malla de puntos durante el escaneo, fijación por toque y destrabe mediante toque corto (*tap* vs *drag/pinch*).
+  - **Seguimiento por Marcador (`PersistentMarkerController.cs`)**: Ocultación automática del `Preview Object` 2D, filtro anti-temblor con zona muerta adaptativa (*Deadzone*) en `LateUpdate`, nivelación gravitatoria para marcadores horizontales y *World Lock* persistente.
+  - **Manipulación Táctil (`TouchManipulationController.cs`)**: Rotación 360° con 1 dedo y escalado uniforme con 2 dedos (*pinch-to-zoom*) con bloqueo de rotación accidental al soltar un dedo.
+  - **Cargador Universal 3D (`RuntimeModelLoader.cs`, `RuntimeMeshFormats.cs`, `ProceduralSampleBuilder.cs`)**: Soporte para maquetas procedurales (`preset:house`, `preset:tower`, `preset:pavilion`), `.glb`/`.gltf` vía `glTFast` (con decodificación única en WASM, clonación al contenedor secundario y conversión de materiales a URP/Lit), `.stl` (binario/ASCII) y `.obj`, liberando explícitamente mallas, materiales e instancias `GltfImport` al cambiar de modelo.
 
 ## Tareas Completadas (Recientes)
-- [x] Configuración de Zappar Instant World Tracking con URP (`ZAPPAR_SRP`, camera depth -1, Overlay camera).
-- [x] Corrección de Input System dual en Unity (`activeInputHandler: 2`) para compatibilidad con eventos táctiles y teclado.
-- [x] Construcción y exportación de Unity WebGL a `public/unity_ar/` con soporte responsive 100vw/100vh.
-- [x] Integración de `UnityARViewer.jsx` en la ruta `/ar-view` de React con selector rápido de modelos en vivo.
-- [x] Implementación de Modo Pantalla Completa Real (inmersivo, con ocultación dinámica de Navbar y encabezados mediante clase `ar-fullscreen-active`).
-- [x] Soporte Dual de Tracking (Superficie vs Marcador `marcador_logo.zpt`) con conmutación dinámica de `AnchorOrigin` (`ARTrackingModeSwitcher.cs`).
-- [x] Anclaje Persistente y World-Lock en marcador de imagen (`PersistentMarkerController.cs`).
-- [x] Manipulación táctil interactiva: Rotación 360° con 1 dedo y Zoom / Escalado tipo pellizco con 2 dedos (`TouchManipulationController.cs`).
-- [x] Visualizador de escaneo de plano estilo ARKit con matriz de puntos y retícula animada (`InstantTrackingController.cs`).
-- [x] Corrección de congelamiento de cámara en WebGL (`Application.targetFrameRate = -1`) y activación de compresión Gzip con Decompression Fallback.
-- [x] Implementación de carga dinámica multimodelo (`.glb`, `.gltf`, `.obj`, `.stl`), reparación de materiales URP para modelos `.glb` texturizados, y catálogo de maquetas arquitectónicas de prueba (`RuntimeModelLoader.cs`, `ProceduralSampleBuilder.cs`, `RuntimeMeshFormats.cs`).
-- [x] Mejora de estabilidad de pose (filtro Deadzone + nivelación por gravedad en `LateUpdate`), ocultación del `Preview Object` 2D del marcador en modo Marcador (`PersistentMarkerController.cs`), y nuevo delimitador arquitectónico de planos horizontales y verticales (`InstantTrackingController.cs`).
-- [x] Blindaje contra congelamiento del visor/cámara tras varios minutos de uso: desactivación explícita del tracker nativo C++/WASM inactivo (`Z.InstantWorldTrackerEnabledSet` / `Z.ImageTrackerEnabledSet`), eliminación de doble llamada SLAM por frame (`MoveAnchorOnZ = true`), límite de `devicePixelRatio <= 1.25` en móviles, compuerta CV a ~30fps y watchdog de auto-reanudación del `<video>` HTML5 en `index.html`.
+- [x] Configuración de Zappar Instant World Tracking e Image Tracking (`marcador_logo.zpt`) con URP y soporte responsive 100vw/100dvh.
+- [x] Implementación de Modo Pantalla Completa Real (con ocultación dinámica de Navbar mediante `ar-fullscreen-active` y reajuste de viewport).
+- [x] Anclaje Persistente (*World Lock*), estabilización adaptativa en marcador y retícula interactiva con destrabe por toque corto en modo plano.
+- [x] Manipulación táctil interactiva (rotación 360° con 1 dedo y zoom con 2 dedos sin giros espurios).
+- [x] Carga dinámica multimodelo (`.glb`, `.gltf`, `.obj`, `.stl` y presets procedurales) con normalización automática a `0.45m` y apoyo sobre `Y = 0`.
+- [x] Blindaje contra congelamientos WebGL: apagado del tracker nativo inactivo, límite de `devicePixelRatio <= 1.25` en móviles, *watchdog* de `<video>` en `index.html` y truncado de sección `name` en `unity_ar.wasm` (<50 MB).
+- [x] Auditoría y refactorización integral del proyecto: centralización de constantes en `src/constants/arConstants.js`, liberación de `Blob URLs` en `AppProvider.jsx`, eliminación de código y dependencias muertas (`ModelViewer.jsx`, assets de plantilla, scripts de UI legacy en Unity y docs duplicadas), optimización de memoria en `RuntimeModelLoader.cs` (instanciación única de `GltfImport` + limpieza de `Mesh`/`Material`), y normalización de ensamblados (`ViMARA` y `ViMARA.Editor`).
 
 ## Próximos Pasos (TODO)
-- [ ] Ejecutar `ViMARA > Setup AR Scene` y compilar el nuevo Build WebGL en Unity para integrar el cargador de modelos en los binarios.
-- [ ] Validar en dispositivos móviles la carga de archivos `.glb`, `.stl` y `.obj` propios exportados por el usuario.
+- [ ] Al abrir el proyecto en Unity Editor, ejecutar `ViMARA > ⚡ Compilar WebGL Rápido` si se desea regenerar los binarios con las mejoras de gestión de memoria de `RuntimeModelLoader`.
+- [ ] Continuar pruebas de validación con distintos modelos CAD exportados en dispositivos iOS y Android.
 
 ## Problemas Abiertos o Notas
-- En iOS Safari, asegurar que el usuario interactúe con la pantalla para conceder permisos de sensores de movimiento y orientación (`DeviceMotionEvent.requestPermission`).
+- En iOS Safari, el selector de archivos no debe incluir el atributo `accept` restrictivo para permitir elegir archivos `.stl` y `.glb` desde la app Archivos.
