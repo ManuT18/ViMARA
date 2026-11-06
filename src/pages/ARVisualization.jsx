@@ -1,30 +1,24 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/useApp';
+import { TRACKING_MODES } from '../constants/arConstants';
 import UnityARViewer from '../components/UnityARViewer';
-import { ArrowLeft, LogOut, Target, Layers, Box, Info } from 'lucide-react';
+import { ArrowLeft, LogOut, Target, Layers, Box } from 'lucide-react';
 
 export default function ARVisualization() {
   const navigate = useNavigate();
   const { currentModel, trackingMode, resetSelection } = useApp();
 
-  const handleBackToImport = () => {
-    navigate('/model-import');
-  };
+  const isMarkerMode = trackingMode === TRACKING_MODES.MARKER;
 
   const handleExitApp = () => {
     resetSelection();
     navigate('/');
   };
 
-  const modeLabel = trackingMode === 'marker' 
-    ? 'Seguimiento por Marcador' 
-    : 'Seguimiento por Plano';
-
-  // Fallback if accessed directly without model
-  if (!currentModel || !currentModel.url) {
+  if (!currentModel?.url) {
     return (
-      <div 
+      <div
         className="animate-fade-in"
         style={{
           maxWidth: '600px',
@@ -34,7 +28,7 @@ export default function ARVisualization() {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '20px'
+          gap: '20px',
         }}
       >
         <div className="glass-panel" style={{ padding: '36px', width: '100%' }}>
@@ -45,7 +39,7 @@ export default function ARVisualization() {
           <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '24px' }}>
             Por favor regresa al paso de importación para seleccionar o cargar una maqueta 3D.
           </p>
-          <button className="btn-primary" onClick={handleBackToImport}>
+          <button className="btn-primary" onClick={() => navigate('/model-import')}>
             <ArrowLeft size={18} />
             <span>Ir a Seleccionar Modelo</span>
           </button>
@@ -56,39 +50,30 @@ export default function ARVisualization() {
 
   return (
     <div className="ar-visualization-page animate-fade-in">
-      {/* Top Header & Navigation Bar */}
       <div className="page-top-bar">
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <button className="page-back-btn" onClick={handleBackToImport}>
+          <button className="page-back-btn" onClick={() => navigate('/model-import')}>
             <ArrowLeft size={16} />
             <span>Volver a Modelo</span>
           </button>
 
-          {/* Model Info Badge */}
-          <div className={`page-mode-badge ${trackingMode === 'marker' ? 'marker' : 'plane'}`}>
-            {trackingMode === 'marker' ? <Target size={14} /> : <Layers size={14} />}
-            <span>Modo: <strong>{trackingMode === 'marker' ? 'Marcador' : 'Plano'}</strong></span>
+          <div className={`page-mode-badge ${isMarkerMode ? 'marker' : 'plane'}`}>
+            {isMarkerMode ? <Target size={14} /> : <Layers size={14} />}
+            <span>
+              Modo: <strong>{isMarkerMode ? 'Marcador' : 'Plano'}</strong>
+            </span>
           </div>
         </div>
 
-        {/* Exit Button */}
-        <button 
-          className="page-back-btn" 
-          onClick={handleExitApp}
-          style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#ef4444' }}
-        >
+        <button className="page-back-btn page-exit-btn" onClick={handleExitApp}>
           <LogOut size={16} />
           <span>Salir</span>
         </button>
       </div>
 
-      {/* Main 3D / WebAR View Component */}
       <main style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-
         <UnityARViewer trackingMode={trackingMode} currentModel={currentModel} />
       </main>
-
-
     </div>
   );
 }

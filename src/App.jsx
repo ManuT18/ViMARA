@@ -13,9 +13,8 @@ export default function App() {
   return (
     <AppProvider>
       <ScrollToTop />
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '100vw', overflowX: 'hidden' }}>
+      <div className="app-shell">
         <Navbar />
-
         <Routes>
           <Route path="/" element={<MainMenu />} />
           <Route path="/mode-selection" element={<ModeSelection />} />

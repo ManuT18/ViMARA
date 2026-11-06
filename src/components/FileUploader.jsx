@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { UploadCloud, CheckCircle2, AlertCircle } from 'lucide-react';
+import { SUPPORTED_EXTENSIONS } from '../constants/arConstants';
 
 export default function FileUploader({ onFileSelect, activeFileName }) {
   const fileInputRef = useRef(null);
@@ -13,15 +14,17 @@ export default function FileUploader({ onFileSelect, activeFileName }) {
     const parts = file.name.split('.');
     const extension = parts.length > 1 ? parts.pop().toLowerCase().trim() : '';
 
-    if (['glb', 'gltf', 'stl', 'obj'].includes(extension)) {
+    if (SUPPORTED_EXTENSIONS.includes(extension)) {
       const objectUrl = URL.createObjectURL(file);
       onFileSelect({
         name: file.name,
         url: objectUrl,
-        format: extension
+        format: extension,
       });
     } else {
-      setErrorMsg(`El archivo "${file.name}" no tiene un formato 3D compatible. Selecciona un archivo .GLB, .GLTF, .STL u .OBJ.`);
+      setErrorMsg(
+        `El archivo "${file.name}" no tiene un formato 3D compatible. Selecciona un archivo .GLB, .GLTF, .STL u .OBJ.`
+      );
     }
 
     // Permitir volver a seleccionar el mismo archivo si el usuario lo desea
@@ -33,34 +36,12 @@ export default function FileUploader({ onFileSelect, activeFileName }) {
       <h3 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '10px', color: 'var(--text-primary)' }}>
         Cargar Modelo desde tu Dispositivo
       </h3>
-      
-      <div 
+
+      <div
         onClick={() => fileInputRef.current?.click()}
-        className="glass-card touch-card"
-        style={{
-          border: '2px dashed #cbd5e1',
-          padding: '24px 16px',
-          textAlign: 'center',
-          cursor: 'pointer',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '12px',
-          borderRadius: 'var(--radius-lg)',
-          userSelect: 'none'
-        }}
+        className="glass-card touch-card upload-dropzone"
       >
-        <div style={{
-          width: '56px',
-          height: '56px',
-          borderRadius: '50%',
-          background: 'var(--accent-light)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'var(--accent-primary)',
-          boxShadow: '0 4px 12px rgba(37, 99, 235, 0.12)'
-        }}>
+        <div className="upload-icon-circle">
           <UploadCloud size={28} />
         </div>
 
@@ -114,9 +95,9 @@ export default function FileUploader({ onFileSelect, activeFileName }) {
 
         {/* IMPORTANTE PARA iOS / iPhone: No usar accept=".stl,.obj,.glb" porque iOS Safari 
             carece de mapeo UTI para .stl/.glb y los deshabilita (en gris) en la app Archivos. */}
-        <input 
+        <input
           ref={fileInputRef}
-          type="file" 
+          type="file"
           style={{ display: 'none' }}
           onChange={handleFileChange}
         />

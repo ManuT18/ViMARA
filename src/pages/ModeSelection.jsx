@@ -1,8 +1,32 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/useApp';
+import { TRACKING_MODES } from '../constants/arConstants';
 import InfoModal from '../components/InfoModal';
 import { ArrowLeft, Target, Layers, Info, CheckCircle2, ChevronRight } from 'lucide-react';
+
+const MODE_OPTIONS = [
+  {
+    id: TRACKING_MODES.MARKER,
+    title: 'Seguimiento por Marcador',
+    description:
+      'Proyecta el modelo anclado sobre un plano impreso, imagen 2D o código QR.\nIdeal para presentaciones de planos.',
+    icon: Target,
+    iconBg: 'rgba(59, 130, 246, 0.2)',
+    accentColor: 'var(--accent-primary)',
+    selectedClass: 'selected-marker',
+  },
+  {
+    id: TRACKING_MODES.PLANE,
+    title: 'Seguimiento por Plano',
+    description:
+      'Detecta automáticamente superficies planas y coloca el modelo 3D sin marcador.\nIdeal para entornos amplios.',
+    icon: Layers,
+    iconBg: 'rgba(139, 92, 246, 0.2)',
+    accentColor: '#a855f7',
+    selectedClass: 'selected-plane',
+  },
+];
 
 export default function ModeSelection() {
   const navigate = useNavigate();
@@ -14,21 +38,16 @@ export default function ModeSelection() {
     navigate('/model-import');
   };
 
-  const handleBackToMenu = () => {
-    navigate('/');
-  };
-
   return (
     <div className="mode-selection-page animate-fade-in">
-      {/* Top Header & Navigation */}
       <div className="page-top-bar">
-        <button className="page-back-btn" onClick={handleBackToMenu}>
+        <button className="page-back-btn" onClick={() => navigate('/')}>
           <ArrowLeft size={16} />
           <span>Volver al Menú</span>
         </button>
 
-        <button 
-          className="page-back-btn help-btn" 
+        <button
+          className="page-back-btn help-btn"
           onClick={() => setIsInfoModalOpen(true)}
         >
           <Info size={16} />
@@ -36,116 +55,79 @@ export default function ModeSelection() {
         </button>
       </div>
 
-      {/* Step Title */}
-      <div style={{ textAlign: 'center' }}>
-        <span style={{ fontSize: '0.85rem', color: 'var(--accent-primary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Paso 1 de 3 · Configuración
-        </span>
-        <h2 style={{ fontSize: '2rem', fontWeight: '700', marginTop: '4px' }}>
-          Selecciona el Modo de Realidad Aumentada
-        </h2>
-        <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginTop: '8px' }}>
+      <div className="step-header">
+        <span className="step-badge-text">Paso 1 de 3 · Configuración</span>
+        <h2 className="step-title">Selecciona el Modo de Realidad Aumentada</h2>
+        <p className="step-subtitle">
           Elige cómo deseas posicionar la maqueta 3D en tu espacio físico.
         </p>
       </div>
 
-      {/* Mode Selection Cards */}
       <div className="mode-cards-container">
-        {/* Option 1: Seguimiento por Marcador */}
-        <div
-          onClick={() => handleSelectMode('marker')}
-          className="mode-card"
-          style={{
-            border: trackingMode === 'marker' ? '2px solid var(--accent-primary)' : '1px solid var(--border-light)',
-            background: trackingMode === 'marker' ? 'rgba(59, 130, 246, 0.08)' : '#ffffff'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '14px',
-              background: 'rgba(59, 130, 246, 0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--accent-primary)'
-            }}>
-              <Target size={26} />
+        {MODE_OPTIONS.map((option) => {
+          const Icon = option.icon;
+          const isSelected = trackingMode === option.id;
+
+          return (
+            <div
+              key={option.id}
+              onClick={() => handleSelectMode(option.id)}
+              className={`mode-card ${isSelected ? option.selectedClass : ''}`}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div
+                  style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '14px',
+                    background: option.iconBg,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: option.accentColor,
+                  }}
+                >
+                  <Icon size={26} />
+                </div>
+
+                {isSelected && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#4ade80', fontSize: '0.85rem', fontWeight: '600' }}>
+                    <CheckCircle2 size={16} /> Seleccionado
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '8px' }}>
+                  {option.title}
+                </h3>
+                <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
+                  {option.description}
+                </p>
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  color: option.accentColor,
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  marginTop: 'auto',
+                }}
+              >
+                <span>Seleccionar este modo</span>
+                <ChevronRight size={18} />
+              </div>
             </div>
-
-            {trackingMode === 'marker' && (
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#4ade80', fontSize: '0.85rem', fontWeight: '600' }}>
-                <CheckCircle2 size={16} /> Seleccionado
-              </span>
-            )}
-          </div>
-
-          <div>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '8px' }}>
-              Seguimiento por Marcador
-            </h3>
-            <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              Proyecta el modelo anclado sobre un plano impreso, imagen 2D o código QR<br />Ideal para presentaciones de planos
-            </p>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-primary)', fontSize: '0.9rem', fontWeight: '600', marginTop: 'auto' }}>
-            <span>Seleccionar este modo</span>
-            <ChevronRight size={18} />
-          </div>
-        </div>
-
-        {/* Option 2: Seguimiento por Plano */}
-        <div
-          onClick={() => handleSelectMode('plane')}
-          className="mode-card"
-          style={{
-            border: trackingMode === 'plane' ? '2px solid #8b5cf6' : '1px solid var(--border-light)',
-            background: trackingMode === 'plane' ? 'rgba(139, 92, 246, 0.08)' : '#ffffff'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '14px',
-              background: 'rgba(139, 92, 246, 0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#a855f7'
-            }}>
-              <Layers size={26} />
-            </div>
-
-            {trackingMode === 'plane' && (
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#4ade80', fontSize: '0.85rem', fontWeight: '600' }}>
-                <CheckCircle2 size={16} /> Seleccionado
-              </span>
-            )}
-          </div>
-
-          <div>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '8px' }}>
-              Seguimiento por Plano
-            </h3>
-            <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              Detecta automáticamente superficies planas y coloca el modelo 3D sin marcador<br />Ideal para entornos amplios
-            </p>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#a855f7', fontSize: '0.9rem', fontWeight: '600', marginTop: 'auto' }}>
-            <span>Seleccionar este modo</span>
-            <ChevronRight size={18} />
-          </div>
-        </div>
+          );
+        })}
       </div>
 
-      {/* Info Modal Component */}
-      <InfoModal 
-        isOpen={isInfoModalOpen} 
-        onClose={() => setIsInfoModalOpen(false)} 
+      <InfoModal
+        isOpen={isInfoModalOpen}
+        onClose={() => setIsInfoModalOpen(false)}
       />
     </div>
   );

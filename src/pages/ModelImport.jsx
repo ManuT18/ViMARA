@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/useApp';
+import { FORMAT_RECOMMENDATIONS, TRACKING_MODES } from '../constants/arConstants';
 import FileUploader from '../components/FileUploader';
 import SampleSelector from '../components/SampleSelector';
 import { ArrowLeft, Play, Target, Layers, FileCode, CheckCircle2, AlertCircle } from 'lucide-react';
@@ -9,103 +10,82 @@ export default function ModelImport() {
   const navigate = useNavigate();
   const { trackingMode, currentModel, setCurrentModel } = useApp();
 
-  const handleSelectSample = (sample) => {
-    setCurrentModel(sample);
-  };
+  const isMarkerMode = trackingMode === TRACKING_MODES.MARKER;
+  const hasValidModel = Boolean(currentModel?.url);
 
   const handleFileSelect = (uploadedFile) => {
     setCurrentModel({
-      id: 'custom-' + Date.now(),
+      id: `custom-${Date.now()}`,
       name: uploadedFile.name,
       format: uploadedFile.format,
-      url: uploadedFile.url
+      url: uploadedFile.url,
     });
   };
 
   const handleStartAR = () => {
-    if (currentModel && currentModel.url) {
+    if (hasValidModel) {
       navigate('/ar-view');
     }
   };
 
-  const handleBackToMode = () => {
-    navigate('/mode-selection');
-  };
-
-  const modeLabel = trackingMode === 'marker' 
-    ? 'Seguimiento por Marcador' 
-    : 'Seguimiento por Plano';
-
   return (
     <div className="model-import-page animate-fade-in">
-      {/* Top Header & Navigation */}
       <div className="page-top-bar">
-        <button className="page-back-btn" onClick={handleBackToMode}>
+        <button className="page-back-btn" onClick={() => navigate('/mode-selection')}>
           <ArrowLeft size={16} />
           <span>Volver a Modo</span>
         </button>
 
-        {/* Selected Mode Tag */}
-        <div className={`page-mode-badge ${trackingMode === 'marker' ? 'marker' : 'plane'}`}>
-          {trackingMode === 'marker' ? <Target size={14} /> : <Layers size={14} />}
-          <span>Modo: <strong>{trackingMode === 'marker' ? 'Marcador' : 'Plano'}</strong></span>
+        <div className={`page-mode-badge ${isMarkerMode ? 'marker' : 'plane'}`}>
+          {isMarkerMode ? <Target size={14} /> : <Layers size={14} />}
+          <span>
+            Modo: <strong>{isMarkerMode ? 'Marcador' : 'Plano'}</strong>
+          </span>
         </div>
       </div>
 
-      {/* Step Title */}
-      <div style={{ textAlign: 'center' }}>
-        <span style={{ fontSize: '0.85rem', color: 'var(--accent-primary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Paso 2 de 3 · Selección de Modelo 3D
-        </span>
-        <h2 style={{ fontSize: '2rem', fontWeight: '700', marginTop: '4px' }}>
-          Importar o Seleccionar Modelo 3D
-        </h2>
+      <div className="step-header">
+        <span className="step-badge-text">Paso 2 de 3 · Selección de Modelo 3D</span>
+        <h2 className="step-title">Importar o Seleccionar Modelo 3D</h2>
       </div>
 
-      {/* Content Grid */}
       <div className="model-import-grid">
-        {/* Left Column: FileUploader & Format Recommendations */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="model-import-column">
           <FileUploader
             onFileSelect={handleFileSelect}
             activeFileName={currentModel?.id?.startsWith('custom-') ? currentModel.name : null}
           />
 
-          {/* Format Recommendations Card */}
           <div className="glass-panel" style={{ padding: '24px' }}>
             <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <FileCode size={18} color="var(--accent-primary)" />
               Recomendaciones de Formato 3D
             </h4>
-            <ul style={{
-              fontSize: '0.85rem',
-              color: 'var(--text-secondary)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px',
-              paddingLeft: '20px'
-            }}>
-              <li>
-                <strong>.GLB / .GLTF:</strong> Formato recomendado para la mejor fidelidad en WebAR, materiales PBR y texturas integradas.
-              </li>
-              <li>
-                <strong>.STL:</strong> Recomendado para prototipos de malla y maquetas físicas sin textura.
-              </li>
-              <li>
-                <strong>.OBJ:</strong> Soporte para geometría básica exportada desde SketchUp o Blender.
-              </li>
+            <ul
+              style={{
+                fontSize: '0.85rem',
+                color: 'var(--text-secondary)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                paddingLeft: '20px',
+              }}
+            >
+              {FORMAT_RECOMMENDATIONS.map((item) => (
+                <li key={item.ext}>
+                  <strong>{item.ext}:</strong> {item.description}
+                </li>
+              ))}
             </ul>
           </div>
         </div>
 
-        {/* Right Column: SampleSelector & Action Confirmation */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="model-import-column">
           <SampleSelector
-            onSelectSample={handleSelectSample}
+            onSelectSample={setCurrentModel}
             activeSampleId={currentModel?.id}
           />
 
-          {/* Selected Model Confirmation Panel & "Iniciar AR" Action */}
           <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <h4 style={{ fontSize: '1rem', fontWeight: '600' }}>
               Estado del Modelo Seleccionado
@@ -117,8 +97,11 @@ export default function ModelImport() {
                 <div>
                   <p style={{ fontWeight: '600', fontSize: '0.92rem' }}>{currentModel.name}</p>
                   <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                    Tipo: <strong style={{ color: 'var(--accent-primary)' }}>
-                      {currentModel.format === 'preset' ? 'MAQUETA INTEGRADA 3D' : currentModel.format?.toUpperCase()}
+                    Tipo:{' '}
+                    <strong style={{ color: 'var(--accent-primary)' }}>
+                      {currentModel.format === 'preset'
+                        ? 'MAQUETA INTEGRADA 3D'
+                        : currentModel.format?.toUpperCase()}
                     </strong>
                   </p>
                 </div>
@@ -132,18 +115,15 @@ export default function ModelImport() {
               </div>
             )}
 
-            {/* "Iniciar AR" Action Button */}
             <button
               className="btn-primary"
               onClick={handleStartAR}
-              disabled={!currentModel || !currentModel.url}
+              disabled={!hasValidModel}
               style={{
                 width: '100%',
                 justifyContent: 'center',
                 padding: '14px',
                 fontSize: '1.05rem',
-                opacity: (!currentModel || !currentModel.url) ? 0.5 : 1,
-                cursor: (!currentModel || !currentModel.url) ? 'not-allowed' : 'pointer'
               }}
             >
               <Play size={20} />

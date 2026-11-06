@@ -1,43 +1,25 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Info, Target, Layers, Check } from 'lucide-react';
 
 export default function InfoModal({ isOpen, onClose }) {
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return createPortal(
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.75)',
-        backdropFilter: 'blur(8px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-        padding: '20px'
-      }}
-      onClick={onClose}
-    >
+    <div className="modal-overlay" onClick={onClose}>
       <div
-        className="glass-panel animate-fade-in"
-        style={{
-          maxWidth: '560px',
-          width: '100%',
-          padding: '28px',
-          background: 'var(--bg-secondary)',
-          border: '1px solid var(--border-glass)',
-          borderRadius: 'var(--radius-lg)',
-          boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
-          position: 'relative'
-        }}
+        className="glass-panel modal-card animate-fade-in"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
@@ -73,7 +55,6 @@ export default function InfoModal({ isOpen, onClose }) {
           </button>
         </div>
 
-        {/* Body Content */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
           <p>
             En <strong>ViMARA WebAR</strong> puedes seleccionar dos métodos de seguimiento para proyectar maquetas 3D en el entorno real:
@@ -98,7 +79,6 @@ export default function InfoModal({ isOpen, onClose }) {
           </div>
         </div>
 
-        {/* Footer */}
         <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
           <button className="btn-primary" onClick={onClose}>
             <Check size={18} /> Entendido / Cerrar

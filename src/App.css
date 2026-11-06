@@ -1,63 +1,15 @@
-/* App specific responsive styles and theme overrides */
+/* Contenedor raíz y utilidades de tarjetas táctiles */
 
-.app-container {
+.app-shell {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
   background-color: var(--bg-primary);
 }
 
-.main-layout {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 20px;
-  width: 100%;
-  display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: 20px;
-  align-items: start;
-}
-
-@media (max-width: 1024px) {
-  .main-layout {
-    grid-template-columns: 1fr 340px;
-    padding: 16px;
-    gap: 16px;
-  }
-}
-
-@media (max-width: 768px) {
-  .main-layout {
-    display: flex;
-    flex-direction: column;
-    padding: 12px;
-    gap: 16px;
-  }
-}
-
-/* Mobile Bottom Sheet Drawer Layout for Mobile Screens (320px - 768px) */
-@media (max-width: 768px) {
-  .mobile-controls-drawer {
-    display: block;
-    margin-top: 8px;
-  }
-  
-  .desktop-controls-sidebar {
-    display: none !important;
-  }
-}
-
-@media (min-width: 769px) {
-  .mobile-controls-drawer {
-    display: none !important;
-  }
-  
-  .desktop-controls-sidebar {
-    display: flex !important;
-  }
-}
-
-/* Touch feedback for cards and buttons */
 .touch-card {
   min-height: 48px;
   transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
