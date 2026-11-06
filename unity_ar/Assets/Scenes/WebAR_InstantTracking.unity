@@ -386,7 +386,7 @@ MonoBehaviour:
   PinchZoomSpeed: 0.003
   ScrollZoomSpeed: 0.15
   MinScale: 0.05
-  MaxScale: 3
+  MaxScale: 10
   SmoothDamping: 12
 --- !u!1 &510392386
 GameObject:
@@ -518,7 +518,7 @@ MonoBehaviour:
   PinchZoomSpeed: 0.003
   ScrollZoomSpeed: 0.15
   MinScale: 0.05
-  MaxScale: 3
+  MaxScale: 10
   SmoothDamping: 12
 --- !u!28 &749685690
 Texture2D:
