@@ -1,7 +1,8 @@
 {
-	"name": "NewAssembly",
-	"references": [
-		"Zappar.UAR",
-		"glTFast"
-	]
+    "name": "ViMARA",
+    "rootNamespace": "ViMARA",
+    "references": [
+        "Zappar.UAR",
+        "glTFast"
+    ]
 }

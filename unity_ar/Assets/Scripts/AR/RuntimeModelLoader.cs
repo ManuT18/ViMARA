@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using GLTFast;
@@ -11,10 +12,10 @@ namespace ViMARA.AR
     /// Gestor universal de carga de modelos 3D en tiempo de ejecución para ViMARA WebAR.
     /// Soporta:
     /// 1. Maquetas de prueba procedurales instantáneas (`preset:house`, `preset:tower`, `preset:pavilion`).
-    /// 2. Modelos externos o locales en formato `.glb` / `.gltf` mediante glTFast (con conversión automática a URP/Lit para evitar texturas rosas en WebGL).
-    /// 3. Modelos de malla arquitectónica `.obj` y `.stl` (ASCII y Binario) exportados desde SketchUp, Revit, Rhino o Blender.
-    /// Normaliza automáticamente el tamaño (Bounding Box) y apoya la base del modelo exactamente en Y = 0
-    /// tanto en el contenedor de Seguimiento por Superficie como en el de Seguimiento por Marcador.
+    /// 2. Modelos externos o locales `.glb` / `.gltf` mediante glTFast con conversión automática a URP/Lit.
+    /// 3. Modelos de malla arquitectónica `.obj` y `.stl` (ASCII y Binario).
+    /// Incluye liberación explícita de recursos dinámicos (mallas, materiales e instancias glTFast)
+    /// y reutilización de jerarquía normalizada entre los contenedores de Superficie y Marcador.
     /// </summary>
     public class RuntimeModelLoader : MonoBehaviour
     {
@@ -33,7 +34,12 @@ namespace ViMARA.AR
         public float TargetNormalizedSize = 0.45f;
 
         private string m_currentModelPayload;
-        private bool m_isLoading = false;
+        private bool m_isLoading;
+
+        // Seguimiento de recursos dinámicos para prevenir fugas de memoria en WebGL
+        private GltfImport m_activeGltfImport;
+        private readonly HashSet<Material> m_allocatedMaterials = new HashSet<Material>();
+        private readonly HashSet<Mesh> m_allocatedMeshes = new HashSet<Mesh>();
 
         private void Awake()
         {
@@ -46,45 +52,13 @@ namespace ViMARA.AR
             CacheReferenceUrpMaterial();
         }
 
-        private void CacheReferenceUrpMaterial()
+        private void OnDestroy()
         {
-            if (BaseUrpMaterial != null) return;
-
-            EnsureContainersResolved();
-            if (SurfaceModelContainer != null)
+            ReleaseAllocatedResources();
+            if (Instance == this)
             {
-                MeshRenderer mr = SurfaceModelContainer.GetComponent<MeshRenderer>();
-                if (mr != null && mr.sharedMaterial != null)
-                {
-                    BaseUrpMaterial = mr.sharedMaterial;
-                    return;
-                }
+                Instance = null;
             }
-
-            if (MarkerModelContainer != null)
-            {
-                MeshRenderer mr = MarkerModelContainer.GetComponent<MeshRenderer>();
-                if (mr != null && mr.sharedMaterial != null)
-                {
-                    BaseUrpMaterial = mr.sharedMaterial;
-                }
-            }
-        }
-
-        private Material CreateCleanUrpMaterial()
-        {
-            CacheReferenceUrpMaterial();
-            if (BaseUrpMaterial != null)
-            {
-                return new Material(BaseUrpMaterial);
-            }
-
-            Shader litShader = Shader.Find("Universal Render Pipeline/Lit");
-            if (litShader == null) litShader = Shader.Find("Universal Render Pipeline/Simple Lit");
-            if (litShader == null) litShader = Shader.Find("Standard");
-            if (litShader == null) litShader = Shader.Find("Sprites/Default");
-
-            return new Material(litShader);
         }
 
         public void InitializeContainers(Transform surfaceContainer, Transform markerContainer)
@@ -95,10 +69,8 @@ namespace ViMARA.AR
         }
 
         /// <summary>
-        /// Método invocable desde JavaScript (SendMessage) o desde ARTrackingModeSwitcher.
-        /// Formato de payload aceptado:
-        /// - "url|format" (ej. "blob:https://...|stl" o "https://.../model.glb|glb")
-        /// - "preset:house|preset"
+        /// Invocable desde JavaScript (SendMessage) o desde ARTrackingModeSwitcher.
+        /// Formato de payload: "url|format" o "preset:house|preset".
         /// </summary>
         public async void LoadModelFromPayload(string payload)
         {
@@ -106,9 +78,14 @@ namespace ViMARA.AR
             if (m_isLoading && payload == m_currentModelPayload) return;
 
             m_currentModelPayload = payload;
-            string url = payload;
-            string format = "";
+            ParsePayload(payload, out string url, out string format);
 
+            Debug.Log($"[ViMARA Loader] Cargando modelo: URL='{url}', Formato='{format}'");
+            await LoadAndPopulateAsync(url, format);
+        }
+
+        private static void ParsePayload(string payload, out string url, out string format)
+        {
             int pipeIdx = payload.LastIndexOf('|');
             if (pipeIdx > 0)
             {
@@ -117,14 +94,12 @@ namespace ViMARA.AR
             }
             else
             {
+                url = payload.Trim();
                 format = InferFormatFromUrl(url);
             }
-
-            Debug.Log($"[ViMARA Loader] Iniciando carga de modelo: URL='{url}', Formato='{format}'");
-            await LoadAndPopulateAsync(url, format);
         }
 
-        private string InferFormatFromUrl(string url)
+        private static string InferFormatFromUrl(string url)
         {
             if (string.IsNullOrEmpty(url)) return "glb";
             if (url.StartsWith("preset:", StringComparison.OrdinalIgnoreCase)) return "preset";
@@ -144,70 +119,74 @@ namespace ViMARA.AR
                 EnsureContainersResolved();
                 CacheReferenceUrpMaterial();
 
-                // 1. Caso: Modelo de prueba procedural integrado
+                Transform primaryContainer = SurfaceModelContainer != null ? SurfaceModelContainer : MarkerModelContainer;
+                Transform secondaryContainer = (primaryContainer == SurfaceModelContainer) ? MarkerModelContainer : null;
+
+                if (primaryContainer == null)
+                {
+                    Debug.LogWarning("[ViMARA Loader] No se encontraron contenedores de modelo en la escena.");
+                    return;
+                }
+
+                // 1. Maqueta de prueba procedural integrada
                 if (url.StartsWith("preset:", StringComparison.OrdinalIgnoreCase) || format == "preset")
                 {
                     string presetName = url.StartsWith("preset:", StringComparison.OrdinalIgnoreCase)
                         ? url.Substring("preset:".Length)
                         : url;
 
-                    PopulateContainerWithPreset(SurfaceModelContainer, presetName);
-                    PopulateContainerWithPreset(MarkerModelContainer, presetName);
-                    Debug.Log($"[ViMARA Loader] Maqueta de prueba '{presetName}' generada y normalizada.");
+                    ResetBothContainersAndResources();
+                    GameObject wrapper = PopulatePrimaryWithPreset(primaryContainer, presetName);
+                    CloneWrapperToSecondary(wrapper, secondaryContainer);
                     return;
                 }
 
-                // 2. Caso: Archivo .GLB / .GLTF vía glTFast
+                // 2. Archivo .GLB / .GLTF vía glTFast (decodificación única en WASM y clonación al contenedor secundario)
                 if (format == "glb" || format == "gltf")
                 {
                     byte[] glbBytes = await DownloadBytesAsync(url);
-                    if (glbBytes != null && glbBytes.Length > 0)
-                    {
-                        await PopulateContainerWithGltfBytesAsync(SurfaceModelContainer, glbBytes, url);
-                        await PopulateContainerWithGltfBytesAsync(MarkerModelContainer, glbBytes, url);
-                        Debug.Log("[ViMARA Loader] Modelo GLB/GLTF cargado e instanciado en ambos modos.");
-                    }
-                    else
-                    {
-                        await PopulateContainerWithGltfUrlAsync(SurfaceModelContainer, url);
-                        await PopulateContainerWithGltfUrlAsync(MarkerModelContainer, url);
-                    }
+                    ResetBothContainersAndResources();
+
+                    GameObject wrapper = (glbBytes != null && glbBytes.Length > 0)
+                        ? await PopulatePrimaryWithGltfBytesAsync(primaryContainer, glbBytes, url)
+                        : await PopulatePrimaryWithGltfUrlAsync(primaryContainer, url);
+
+                    CloneWrapperToSecondary(wrapper, secondaryContainer);
                     return;
                 }
 
-                // 3. Caso: Archivo .STL (Binario o ASCII)
+                // 3. Archivo .STL (Binario o ASCII)
                 if (format == "stl")
                 {
                     byte[] stlBytes = await DownloadBytesAsync(url);
-                    if (stlBytes != null && stlBytes.Length > 0)
-                    {
-                        Mesh stlMesh = RuntimeMeshFormats.LoadStlFromBytes(stlBytes);
-                        if (stlMesh != null)
-                        {
-                            PopulateContainerWithMesh(SurfaceModelContainer, stlMesh, "Imported_STL_Model");
-                            PopulateContainerWithMesh(MarkerModelContainer, stlMesh, "Imported_STL_Model");
-                            Debug.Log("[ViMARA Loader] Modelo STL cargado y normalizado exitosamente.");
-                        }
-                    }
+                    if (stlBytes == null || stlBytes.Length == 0) return;
+
+                    Mesh stlMesh = RuntimeMeshFormats.LoadStlFromBytes(stlBytes);
+                    if (stlMesh == null) return;
+
+                    ResetBothContainersAndResources();
+                    m_allocatedMeshes.Add(stlMesh);
+
+                    GameObject wrapper = PopulatePrimaryWithMesh(primaryContainer, stlMesh, "Imported_STL_Model");
+                    CloneWrapperToSecondary(wrapper, secondaryContainer);
                     return;
                 }
 
-                // 4. Caso: Archivo .OBJ
+                // 4. Archivo .OBJ
                 if (format == "obj")
                 {
                     byte[] objBytes = await DownloadBytesAsync(url);
-                    if (objBytes != null && objBytes.Length > 0)
-                    {
-                        string objText = Encoding.UTF8.GetString(objBytes);
-                        Mesh objMesh = RuntimeMeshFormats.LoadObjFromText(objText);
-                        if (objMesh != null)
-                        {
-                            PopulateContainerWithMesh(SurfaceModelContainer, objMesh, "Imported_OBJ_Model");
-                            PopulateContainerWithMesh(MarkerModelContainer, objMesh, "Imported_OBJ_Model");
-                            Debug.Log("[ViMARA Loader] Modelo OBJ cargado y normalizado exitosamente.");
-                        }
-                    }
-                    return;
+                    if (objBytes == null || objBytes.Length == 0) return;
+
+                    string objText = Encoding.UTF8.GetString(objBytes);
+                    Mesh objMesh = RuntimeMeshFormats.LoadObjFromText(objText);
+                    if (objMesh == null) return;
+
+                    ResetBothContainersAndResources();
+                    m_allocatedMeshes.Add(objMesh);
+
+                    GameObject wrapper = PopulatePrimaryWithMesh(primaryContainer, objMesh, "Imported_OBJ_Model");
+                    CloneWrapperToSecondary(wrapper, secondaryContainer);
                 }
             }
             catch (Exception ex)
@@ -241,7 +220,53 @@ namespace ViMARA.AR
             }
         }
 
-        private async Task<byte[]> DownloadBytesAsync(string url)
+        private void CacheReferenceUrpMaterial()
+        {
+            if (BaseUrpMaterial != null) return;
+
+            EnsureContainersResolved();
+            if (SurfaceModelContainer != null)
+            {
+                MeshRenderer mr = SurfaceModelContainer.GetComponent<MeshRenderer>();
+                if (mr != null && mr.sharedMaterial != null)
+                {
+                    BaseUrpMaterial = mr.sharedMaterial;
+                    return;
+                }
+            }
+
+            if (MarkerModelContainer != null)
+            {
+                MeshRenderer mr = MarkerModelContainer.GetComponent<MeshRenderer>();
+                if (mr != null && mr.sharedMaterial != null)
+                {
+                    BaseUrpMaterial = mr.sharedMaterial;
+                }
+            }
+        }
+
+        private Material CreateTrackedUrpMaterial()
+        {
+            CacheReferenceUrpMaterial();
+            Material mat;
+            if (BaseUrpMaterial != null)
+            {
+                mat = new Material(BaseUrpMaterial);
+            }
+            else
+            {
+                Shader litShader = Shader.Find("Universal Render Pipeline/Lit")
+                                ?? Shader.Find("Universal Render Pipeline/Simple Lit")
+                                ?? Shader.Find("Standard")
+                                ?? Shader.Find("Sprites/Default");
+                mat = new Material(litShader);
+            }
+
+            m_allocatedMaterials.Add(mat);
+            return mat;
+        }
+
+        private static async Task<byte[]> DownloadBytesAsync(string url)
         {
             using (UnityWebRequest www = UnityWebRequest.Get(url))
             {
@@ -261,24 +286,20 @@ namespace ViMARA.AR
             }
         }
 
-        private void PopulateContainerWithPreset(Transform container, string presetName)
+        private GameObject PopulatePrimaryWithPreset(Transform container, string presetName)
         {
-            if (container == null) return;
-            PrepareContainerForNewContent(container);
-
             GameObject wrapper = CreateNormalizedContentWrapper(container, $"Preset_{presetName}");
-            GameObject model = ProceduralSampleBuilder.CreatePreset(presetName);
+            GameObject model = ProceduralSampleBuilder.CreatePreset(presetName, BaseUrpMaterial);
             model.transform.SetParent(wrapper.transform, false);
 
+            RegisterMaterialsFromHierarchy(wrapper);
             RepairAndUpgradeMaterialsToUrp(wrapper);
             NormalizeAndGroundContent(container, wrapper);
+            return wrapper;
         }
 
-        private void PopulateContainerWithMesh(Transform container, Mesh mesh, string modelName)
+        private GameObject PopulatePrimaryWithMesh(Transform container, Mesh mesh, string modelName)
         {
-            if (container == null || mesh == null) return;
-            PrepareContainerForNewContent(container);
-
             GameObject wrapper = CreateNormalizedContentWrapper(container, modelName);
             GameObject meshObj = new GameObject("ArchitecturalMesh");
             meshObj.transform.SetParent(wrapper.transform, false);
@@ -287,7 +308,7 @@ namespace ViMARA.AR
             mf.sharedMesh = mesh;
 
             MeshRenderer mr = meshObj.AddComponent<MeshRenderer>();
-            Material archMat = CreateCleanUrpMaterial();
+            Material archMat = CreateTrackedUrpMaterial();
             Color warmWhite = new Color(0.90f, 0.91f, 0.93f);
             archMat.color = warmWhite;
             if (archMat.HasProperty("_BaseColor")) archMat.SetColor("_BaseColor", warmWhite);
@@ -295,70 +316,96 @@ namespace ViMARA.AR
             mr.sharedMaterial = archMat;
 
             NormalizeAndGroundContent(container, wrapper);
+            return wrapper;
         }
 
-        private async Task PopulateContainerWithGltfBytesAsync(Transform container, byte[] data, string originalUrl)
+        private async Task<GameObject> PopulatePrimaryWithGltfBytesAsync(Transform container, byte[] data, string originalUrl)
         {
-            if (container == null) return;
-            PrepareContainerForNewContent(container);
-
             GameObject wrapper = CreateNormalizedContentWrapper(container, "GLTF_Model");
-            var gltf = new GltfImport();
+            m_activeGltfImport = new GltfImport();
+
             Uri baseUri = null;
-            if (Uri.TryCreate(originalUrl, UriKind.Absolute, out Uri parsedUri) && !originalUrl.StartsWith("blob:", StringComparison.OrdinalIgnoreCase))
+            if (Uri.TryCreate(originalUrl, UriKind.Absolute, out Uri parsedUri) &&
+                !originalUrl.StartsWith("blob:", StringComparison.OrdinalIgnoreCase))
             {
                 baseUri = parsedUri;
             }
 
-            bool success = await gltf.LoadGltfBinary(data, baseUri);
+            bool success = await m_activeGltfImport.LoadGltfBinary(data, baseUri);
             if (!success)
             {
                 string json = Encoding.UTF8.GetString(data);
-                success = await gltf.LoadGltfJson(json, baseUri);
+                success = await m_activeGltfImport.LoadGltfJson(json, baseUri);
             }
 
-            if (success)
-            {
-                await gltf.InstantiateMainSceneAsync(wrapper.transform);
-                RepairAndUpgradeMaterialsToUrp(wrapper);
-                NormalizeAndGroundContent(container, wrapper);
-            }
-            else
+            if (!success)
             {
                 Debug.LogError("[ViMARA Loader] glTFast no pudo decodificar los bytes del archivo.");
+                return null;
             }
+
+            await m_activeGltfImport.InstantiateMainSceneAsync(wrapper.transform);
+            RepairAndUpgradeMaterialsToUrp(wrapper);
+            NormalizeAndGroundContent(container, wrapper);
+            return wrapper;
         }
 
-        private async Task PopulateContainerWithGltfUrlAsync(Transform container, string url)
+        private async Task<GameObject> PopulatePrimaryWithGltfUrlAsync(Transform container, string url)
         {
-            if (container == null) return;
-            PrepareContainerForNewContent(container);
-
             GameObject wrapper = CreateNormalizedContentWrapper(container, "GLTF_Model");
-            var gltf = new GltfImport();
-            bool success = await gltf.Load(url);
-            if (success)
-            {
-                await gltf.InstantiateMainSceneAsync(wrapper.transform);
-                RepairAndUpgradeMaterialsToUrp(wrapper);
-                NormalizeAndGroundContent(container, wrapper);
-            }
-            else
+            m_activeGltfImport = new GltfImport();
+
+            bool success = await m_activeGltfImport.Load(url);
+            if (!success)
             {
                 Debug.LogError($"[ViMARA Loader] glTFast falló al cargar desde URL: {url}");
+                return null;
+            }
+
+            await m_activeGltfImport.InstantiateMainSceneAsync(wrapper.transform);
+            RepairAndUpgradeMaterialsToUrp(wrapper);
+            NormalizeAndGroundContent(container, wrapper);
+            return wrapper;
+        }
+
+        private static void CloneWrapperToSecondary(GameObject primaryWrapper, Transform secondaryContainer)
+        {
+            if (primaryWrapper == null || secondaryContainer == null) return;
+
+            GameObject clone = Instantiate(primaryWrapper, secondaryContainer, false);
+            clone.name = primaryWrapper.name;
+            clone.transform.localPosition = primaryWrapper.transform.localPosition;
+            clone.transform.localRotation = primaryWrapper.transform.localRotation;
+            clone.transform.localScale = primaryWrapper.transform.localScale;
+        }
+
+        private void RegisterMaterialsFromHierarchy(GameObject rootObj)
+        {
+            if (rootObj == null) return;
+            Renderer[] renderers = rootObj.GetComponentsInChildren<Renderer>(true);
+            foreach (Renderer r in renderers)
+            {
+                foreach (Material mat in r.sharedMaterials)
+                {
+                    if (mat != null && mat != BaseUrpMaterial)
+                    {
+                        m_allocatedMaterials.Add(mat);
+                    }
+                }
             }
         }
 
         /// <summary>
-        /// Repara cualquier material de glTFast cuyo shader haya sido eliminado en WebGL (color magenta/rosa)
-        /// transfiriendo todas sus texturas PBR (BaseMap, NormalMap, Metallic, Emission, Occlusion) y colores
-        /// al shader Universal Render Pipeline/Lit garantizado en escena.
+        /// Repara materiales de glTFast cuyo shader haya sido eliminado en WebGL (color magenta),
+        /// transfiriendo texturas PBR y propiedades al shader Universal Render Pipeline/Lit garantizado.
         /// </summary>
         private void RepairAndUpgradeMaterialsToUrp(GameObject rootObj)
         {
             if (rootObj == null) return;
             Renderer[] renderers = rootObj.GetComponentsInChildren<Renderer>(true);
             if (renderers == null) return;
+
+            var upgradedLookup = new Dictionary<Material, Material>();
 
             foreach (Renderer r in renderers)
             {
@@ -371,7 +418,7 @@ namespace ViMARA.AR
                     Material oldMat = sharedMats[i];
                     if (oldMat == null)
                     {
-                        sharedMats[i] = CreateCleanUrpMaterial();
+                        sharedMats[i] = CreateTrackedUrpMaterial();
                         updated = true;
                         continue;
                     }
@@ -383,81 +430,11 @@ namespace ViMARA.AR
 
                     if (!needsUpgrade) continue;
 
-                    Material newMat = CreateCleanUrpMaterial();
-                    newMat.name = oldMat.name + "_URP";
-
-                    // 1. Extraer color base
-                    Color baseCol = Color.white;
-                    if (oldMat.HasProperty("baseColorFactor")) baseCol = oldMat.GetColor("baseColorFactor");
-                    else if (oldMat.HasProperty("_BaseColor")) baseCol = oldMat.GetColor("_BaseColor");
-                    else if (oldMat.HasProperty("_Color")) baseCol = oldMat.GetColor("_Color");
-
-                    newMat.color = baseCol;
-                    if (newMat.HasProperty("_BaseColor")) newMat.SetColor("_BaseColor", baseCol);
-                    if (newMat.HasProperty("_Color")) newMat.SetColor("_Color", baseCol);
-
-                    // 2. Extraer textura principal (Albedo / BaseColor)
-                    Texture albedoTex = null;
-                    if (oldMat.HasProperty("baseColorTexture")) albedoTex = oldMat.GetTexture("baseColorTexture");
-                    if (albedoTex == null && oldMat.HasProperty("_BaseMap")) albedoTex = oldMat.GetTexture("_BaseMap");
-                    if (albedoTex == null && oldMat.HasProperty("_MainTex")) albedoTex = oldMat.GetTexture("_MainTex");
-                    if (albedoTex == null) albedoTex = oldMat.mainTexture;
-
-                    if (albedoTex != null)
+                    if (!upgradedLookup.TryGetValue(oldMat, out Material newMat))
                     {
-                        newMat.mainTexture = albedoTex;
-                        if (newMat.HasProperty("_BaseMap")) newMat.SetTexture("_BaseMap", albedoTex);
-                        if (newMat.HasProperty("_MainTex")) newMat.SetTexture("_MainTex", albedoTex);
+                        newMat = ConvertMaterialToUrp(oldMat);
+                        upgradedLookup[oldMat] = newMat;
                     }
-
-                    // 3. Extraer Normal Map
-                    Texture normalTex = null;
-                    if (oldMat.HasProperty("normalTexture")) normalTex = oldMat.GetTexture("normalTexture");
-                    if (normalTex == null && oldMat.HasProperty("_BumpMap")) normalTex = oldMat.GetTexture("_BumpMap");
-                    if (normalTex != null && newMat.HasProperty("_BumpMap"))
-                    {
-                        newMat.SetTexture("_BumpMap", normalTex);
-                        newMat.EnableKeyword("_NORMALMAP");
-                    }
-
-                    // 4. Extraer Emissive Map y Color
-                    Texture emissiveTex = null;
-                    if (oldMat.HasProperty("emissiveTexture")) emissiveTex = oldMat.GetTexture("emissiveTexture");
-                    if (emissiveTex == null && oldMat.HasProperty("_EmissionMap")) emissiveTex = oldMat.GetTexture("_EmissionMap");
-                    Color emissiveCol = Color.black;
-                    if (oldMat.HasProperty("emissiveFactor")) emissiveCol = oldMat.GetColor("emissiveFactor");
-                    else if (oldMat.HasProperty("_EmissionColor")) emissiveCol = oldMat.GetColor("_EmissionColor");
-
-                    if (emissiveTex != null || emissiveCol != Color.black)
-                    {
-                        newMat.EnableKeyword("_EMISSION");
-                        if (emissiveTex != null && newMat.HasProperty("_EmissionMap"))
-                            newMat.SetTexture("_EmissionMap", emissiveTex);
-                        if (newMat.HasProperty("_EmissionColor"))
-                            newMat.SetColor("_EmissionColor", emissiveCol == Color.black ? Color.white : emissiveCol);
-                    }
-
-                    // 5. Extraer Occlusion Map
-                    Texture occTex = null;
-                    if (oldMat.HasProperty("occlusionTexture")) occTex = oldMat.GetTexture("occlusionTexture");
-                    if (occTex == null && oldMat.HasProperty("_OcclusionMap")) occTex = oldMat.GetTexture("_OcclusionMap");
-                    if (occTex != null && newMat.HasProperty("_OcclusionMap"))
-                    {
-                        newMat.SetTexture("_OcclusionMap", occTex);
-                    }
-
-                    // 6. Ajustar Metallic y Smoothness
-                    float metallic = 0f;
-                    if (oldMat.HasProperty("metallicFactor")) metallic = oldMat.GetFloat("metallicFactor");
-                    else if (oldMat.HasProperty("_Metallic")) metallic = oldMat.GetFloat("_Metallic");
-
-                    float smoothness = 0.45f;
-                    if (oldMat.HasProperty("roughnessFactor")) smoothness = Mathf.Clamp01(1f - oldMat.GetFloat("roughnessFactor") * 0.65f);
-                    else if (oldMat.HasProperty("_Smoothness")) smoothness = oldMat.GetFloat("_Smoothness");
-
-                    // Si tiene textura metálica pero URP usa el canal Alpha en lugar de G, usamos valores equilibrados para evitar que se vea negro
-                    if (newMat.HasProperty("_Metallic")) newMat.SetFloat("_Metallic", Mathf.Clamp(metallic, 0f, 0.35f));
-                    if (newMat.HasProperty("_Smoothness")) newMat.SetFloat("_Smoothness", smoothness);
 
                     sharedMats[i] = newMat;
                     updated = true;
@@ -470,12 +447,126 @@ namespace ViMARA.AR
             }
         }
 
-        /// <summary>
-        /// Oculta el MeshRenderer del cubo de prueba original y elimina modelos cargados previamente.
-        /// </summary>
-        private void PrepareContainerForNewContent(Transform container)
+        private Material ConvertMaterialToUrp(Material oldMat)
+        {
+            Material newMat = CreateTrackedUrpMaterial();
+            newMat.name = oldMat.name + "_URP";
+
+            // 1. Color base
+            Color baseCol = Color.white;
+            if (oldMat.HasProperty("baseColorFactor")) baseCol = oldMat.GetColor("baseColorFactor");
+            else if (oldMat.HasProperty("_BaseColor")) baseCol = oldMat.GetColor("_BaseColor");
+            else if (oldMat.HasProperty("_Color")) baseCol = oldMat.GetColor("_Color");
+
+            newMat.color = baseCol;
+            if (newMat.HasProperty("_BaseColor")) newMat.SetColor("_BaseColor", baseCol);
+            if (newMat.HasProperty("_Color")) newMat.SetColor("_Color", baseCol);
+
+            // 2. Textura Albedo / BaseMap
+            Texture albedoTex = GetFirstAvailableTexture(oldMat, "baseColorTexture", "_BaseMap", "_MainTex") ?? oldMat.mainTexture;
+            if (albedoTex != null)
+            {
+                newMat.mainTexture = albedoTex;
+                if (newMat.HasProperty("_BaseMap")) newMat.SetTexture("_BaseMap", albedoTex);
+                if (newMat.HasProperty("_MainTex")) newMat.SetTexture("_MainTex", albedoTex);
+            }
+
+            // 3. Normal Map
+            Texture normalTex = GetFirstAvailableTexture(oldMat, "normalTexture", "_BumpMap");
+            if (normalTex != null && newMat.HasProperty("_BumpMap"))
+            {
+                newMat.SetTexture("_BumpMap", normalTex);
+                newMat.EnableKeyword("_NORMALMAP");
+            }
+
+            // 4. Emissive Map y Color
+            Texture emissiveTex = GetFirstAvailableTexture(oldMat, "emissiveTexture", "_EmissionMap");
+            Color emissiveCol = Color.black;
+            if (oldMat.HasProperty("emissiveFactor")) emissiveCol = oldMat.GetColor("emissiveFactor");
+            else if (oldMat.HasProperty("_EmissionColor")) emissiveCol = oldMat.GetColor("_EmissionColor");
+
+            if (emissiveTex != null || emissiveCol != Color.black)
+            {
+                newMat.EnableKeyword("_EMISSION");
+                if (emissiveTex != null && newMat.HasProperty("_EmissionMap"))
+                    newMat.SetTexture("_EmissionMap", emissiveTex);
+                if (newMat.HasProperty("_EmissionColor"))
+                    newMat.SetColor("_EmissionColor", emissiveCol == Color.black ? Color.white : emissiveCol);
+            }
+
+            // 5. Occlusion Map
+            Texture occTex = GetFirstAvailableTexture(oldMat, "occlusionTexture", "_OcclusionMap");
+            if (occTex != null && newMat.HasProperty("_OcclusionMap"))
+            {
+                newMat.SetTexture("_OcclusionMap", occTex);
+            }
+
+            // 6. Metallic y Smoothness equilibrados para URP
+            float metallic = 0f;
+            if (oldMat.HasProperty("metallicFactor")) metallic = oldMat.GetFloat("metallicFactor");
+            else if (oldMat.HasProperty("_Metallic")) metallic = oldMat.GetFloat("_Metallic");
+
+            float smoothness = 0.45f;
+            if (oldMat.HasProperty("roughnessFactor")) smoothness = Mathf.Clamp01(1f - oldMat.GetFloat("roughnessFactor") * 0.65f);
+            else if (oldMat.HasProperty("_Smoothness")) smoothness = oldMat.GetFloat("_Smoothness");
+
+            if (newMat.HasProperty("_Metallic")) newMat.SetFloat("_Metallic", Mathf.Clamp(metallic, 0f, 0.35f));
+            if (newMat.HasProperty("_Smoothness")) newMat.SetFloat("_Smoothness", smoothness);
+
+            return newMat;
+        }
+
+        private static Texture GetFirstAvailableTexture(Material mat, params string[] propertyNames)
+        {
+            foreach (string prop in propertyNames)
+            {
+                if (mat.HasProperty(prop))
+                {
+                    Texture tex = mat.GetTexture(prop);
+                    if (tex != null) return tex;
+                }
+            }
+            return null;
+        }
+
+        private void ResetBothContainersAndResources()
         {
             CacheReferenceUrpMaterial();
+            PrepareContainerForNewContent(SurfaceModelContainer);
+            PrepareContainerForNewContent(MarkerModelContainer);
+            ReleaseAllocatedResources();
+        }
+
+        private void ReleaseAllocatedResources()
+        {
+            if (m_activeGltfImport != null)
+            {
+                m_activeGltfImport.Dispose();
+                m_activeGltfImport = null;
+            }
+
+            foreach (Material mat in m_allocatedMaterials)
+            {
+                if (mat != null && mat != BaseUrpMaterial)
+                {
+                    Destroy(mat);
+                }
+            }
+            m_allocatedMaterials.Clear();
+
+            foreach (Mesh mesh in m_allocatedMeshes)
+            {
+                if (mesh != null)
+                {
+                    Destroy(mesh);
+                }
+            }
+            m_allocatedMeshes.Clear();
+        }
+
+        private static void PrepareContainerForNewContent(Transform container)
+        {
+            if (container == null) return;
 
             MeshRenderer rootMeshRenderer = container.GetComponent<MeshRenderer>();
             if (rootMeshRenderer != null) rootMeshRenderer.enabled = false;
@@ -499,7 +590,7 @@ namespace ViMARA.AR
             }
         }
 
-        private GameObject CreateNormalizedContentWrapper(Transform container, string name)
+        private static GameObject CreateNormalizedContentWrapper(Transform container, string name)
         {
             GameObject wrapper = new GameObject(name);
             wrapper.transform.SetParent(container, false);
@@ -510,8 +601,8 @@ namespace ViMARA.AR
         }
 
         /// <summary>
-        /// Calcula el Bounding Box total en espacio del contenedor, normaliza la escala
-        /// y centra el modelo en X/Z haciendo que la base inferior descanse exactamente en Y = 0.
+        /// Calcula el Bounding Box total en el espacio del contenedor, normaliza la escala
+        /// y centra el modelo en X/Z apoyando su base exactamente sobre Y = 0.
         /// </summary>
         private void NormalizeAndGroundContent(Transform container, GameObject wrapper)
         {

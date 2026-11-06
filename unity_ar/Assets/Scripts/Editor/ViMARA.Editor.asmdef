@@ -2,7 +2,7 @@
     "name": "ViMARA.Editor",
     "rootNamespace": "ViMARA.Editor",
     "references": [
-        "NewAssembly",
+        "ViMARA",
         "Zappar.UAR",
         "glTFast"
     ],
