@@ -9,6 +9,12 @@ export default function ARVisualization() {
   const navigate = useNavigate();
   const { currentModel, trackingMode, resetSelection } = useApp();
 
+  React.useEffect(() => {
+    if (!trackingMode) {
+      navigate('/mode-selection', { replace: true });
+    }
+  }, [trackingMode, navigate]);
+
   const isMarkerMode = trackingMode === TRACKING_MODES.MARKER;
 
   const handleExitApp = () => {

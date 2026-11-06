@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useApp } from '../context/useApp';
 import { Box, Home, Target, FolderUp, Eye } from 'lucide-react';
 
 const NAV_STEPS = [
@@ -12,11 +13,30 @@ const NAV_STEPS = [
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { trackingMode, currentModel } = useApp();
 
   const currentStepIndex = Math.max(
     0,
     NAV_STEPS.findIndex((step) => step.path === location.pathname)
   );
+
+  const handleStepClick = (path) => {
+    if (path === '/model-import' && !trackingMode) {
+      navigate('/mode-selection');
+      return;
+    }
+    if (path === '/ar-view') {
+      if (!trackingMode) {
+        navigate('/mode-selection');
+        return;
+      }
+      if (!currentModel?.url) {
+        navigate('/model-import');
+        return;
+      }
+    }
+    navigate(path);
+  };
 
   return (
     <nav className="glass-panel navbar-container">
@@ -38,7 +58,7 @@ export default function Navbar() {
           return (
             <React.Fragment key={step.path}>
               <button
-                onClick={() => navigate(step.path)}
+                onClick={() => handleStepClick(step.path)}
                 className={`navbar-step-btn ${isActive ? 'active' : ''} ${isPassed ? 'passed' : ''}`}
                 title={step.label}
               >

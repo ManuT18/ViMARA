@@ -10,6 +10,12 @@ export default function ModelImport() {
   const navigate = useNavigate();
   const { trackingMode, currentModel, setCurrentModel } = useApp();
 
+  React.useEffect(() => {
+    if (!trackingMode) {
+      navigate('/mode-selection', { replace: true });
+    }
+  }, [trackingMode, navigate]);
+
   const isMarkerMode = trackingMode === TRACKING_MODES.MARKER;
   const hasValidModel = Boolean(currentModel?.url);
 

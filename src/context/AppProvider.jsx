@@ -1,14 +1,13 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { AppContext } from './AppContext';
-import { DEFAULT_MODEL, TRACKING_MODES } from '../constants/arConstants';
 
 function isBlobUrl(url) {
   return typeof url === 'string' && url.startsWith('blob:');
 }
 
 export function AppProvider({ children }) {
-  const [trackingMode, setTrackingMode] = useState(TRACKING_MODES.PLANE);
-  const [currentModel, setCurrentModelState] = useState(DEFAULT_MODEL);
+  const [trackingMode, setTrackingMode] = useState(null);
+  const [currentModel, setCurrentModelState] = useState(null);
   const previousBlobUrlRef = useRef(null);
 
   const revokePreviousBlobIfNeeded = useCallback((nextUrl) => {
@@ -29,8 +28,8 @@ export function AppProvider({ children }) {
 
   const resetSelection = useCallback(() => {
     revokePreviousBlobIfNeeded(null);
-    setTrackingMode(TRACKING_MODES.PLANE);
-    setCurrentModelState(DEFAULT_MODEL);
+    setTrackingMode(null);
+    setCurrentModelState(null);
   }, [revokePreviousBlobIfNeeded]);
 
   useEffect(() => {
