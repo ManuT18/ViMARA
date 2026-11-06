@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["react", "oxc"],
-  "ignorePatterns": ["public/unity_ar/**", "unity_ar/Assets/WebGLTemplates/**", "dist/**", "unity_ar/Library/**", "unity_ar/Temp/**"],
+  "ignorePatterns": ["public/unity_ar/Build/**", "dist/**", "unity_ar/Library/**", "unity_ar/Temp/**"],
   "rules": {
     "react/rules-of-hooks": "error",
     "react/only-export-components": ["warn", { "allowConstantExport": true }]

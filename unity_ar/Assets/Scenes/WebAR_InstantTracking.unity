@@ -182,7 +182,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 05ce7569bd038e54ba3de0b4c9b5e57b, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: ViMARA::ViMARA.AR.InstantTrackingController
+  m_EditorClassIdentifier: NewAssembly::ViMARA.AR.InstantTrackingController
   AllowTouchToggle: 1
   ResetKey: 32
   ShowPlaneVisualizer: 1
@@ -380,13 +380,13 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f906019052332d24cb267a565a6f8b49, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: ViMARA::ViMARA.AR.TouchManipulationController
+  m_EditorClassIdentifier: NewAssembly::ViMARA.AR.TouchManipulationController
   RotationSpeed: 0.4
   MouseRotationSpeed: 3.5
   PinchZoomSpeed: 0.003
   ScrollZoomSpeed: 0.15
   MinScale: 0.05
-  MaxScale: 10
+  MaxScale: 3
   SmoothDamping: 12
 --- !u!1 &510392386
 GameObject:
@@ -512,13 +512,13 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f906019052332d24cb267a565a6f8b49, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: ViMARA::ViMARA.AR.TouchManipulationController
+  m_EditorClassIdentifier: NewAssembly::ViMARA.AR.TouchManipulationController
   RotationSpeed: 0.4
   MouseRotationSpeed: 3.5
   PinchZoomSpeed: 0.003
   ScrollZoomSpeed: 0.15
   MinScale: 0.05
-  MaxScale: 10
+  MaxScale: 3
   SmoothDamping: 12
 --- !u!28 &749685690
 Texture2D:
@@ -701,8 +701,8 @@ Camera:
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
   m_TargetEye: 3
-  m_HDR: 0
-  m_AllowMSAA: 0
+  m_HDR: 1
+  m_AllowMSAA: 1
   m_AllowDynamicResolution: 0
   m_ForceIntoRT: 0
   m_OcclusionCulling: 0
@@ -775,7 +775,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 03b0f3f9cd1f10445a1fddecec0aacb1, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: ViMARA::ViMARA.AR.PersistentMarkerController
+  m_EditorClassIdentifier: NewAssembly::ViMARA.AR.PersistentMarkerController
   ElevationOffset: 0.01
   AutoLevelHorizontalMarkers: 1
   TrackingLerpSpeed: 12
@@ -906,8 +906,8 @@ Camera:
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
   m_TargetEye: 3
-  m_HDR: 0
-  m_AllowMSAA: 0
+  m_HDR: 1
+  m_AllowMSAA: 1
   m_AllowDynamicResolution: 0
   m_ForceIntoRT: 0
   m_OcclusionCulling: 1
@@ -958,7 +958,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b178a67a0d38cbe498778b8212aca4ee, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: ViMARA::ViMARA.AR.ARTrackingModeSwitcher
+  m_EditorClassIdentifier: NewAssembly::ViMARA.AR.ARTrackingModeSwitcher
   InstantTrackingRoot: {fileID: 99963333}
   ImageTrackingRoot: {fileID: 972783419}
   DefaultMode: 0
@@ -988,7 +988,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6b7efae16bea6474d8e8bd261a6d17a9, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: ViMARA::ViMARA.AR.RuntimeModelLoader
+  m_EditorClassIdentifier: NewAssembly::ViMARA.AR.RuntimeModelLoader
   SurfaceModelContainer: {fileID: 359664345}
   MarkerModelContainer: {fileID: 510392387}
   BaseUrpMaterial: {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}

@@ -852,7 +852,7 @@ PlayerSettings:
   scriptingDefineSymbols:
     Android: ZAPPAR_SRP
     Standalone: ZAPPAR_SRP
-    WebGL: ZAPPAR_SRP;URP_COMPATIBILITY_MODE
+    WebGL: ZAPPAR_SRP
     iPhone: UNITY_XR_ARKIT_LOADER_ENABLED;ZAPPAR_SRP
   additionalCompilerArguments: {}
   platformArchitecture: {}

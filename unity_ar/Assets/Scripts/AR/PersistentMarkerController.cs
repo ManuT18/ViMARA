@@ -69,9 +69,16 @@ namespace ViMARA.AR
         private void OnEnable()
         {
             HideMarkerPreviewObjects();
-            if (m_imageTarget != null && m_imageTarget.ImageTrackerPtr != null)
+            if (m_imageTarget != null)
             {
-                Z.ImageTrackerEnabledSet(m_imageTarget.ImageTrackerPtr.Value, true);
+                if (m_imageTarget.ImageTrackerPtr != null)
+                {
+                    Z.ImageTrackerEnabledSet(m_imageTarget.ImageTrackerPtr.Value, true);
+                }
+                else if (ZapparCamera.Instance != null && ZapparCamera.Instance.PipelineIsInitialized)
+                {
+                    m_imageTarget.OnZapparInitialized(ZapparCamera.Instance.GetPipeline);
+                }
             }
 
             if (TargetModel != null && m_hasBeenDetectedOnce)
