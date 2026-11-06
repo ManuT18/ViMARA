@@ -20,7 +20,7 @@ namespace ViMARA.AR
         public float PinchZoomSpeed = 0.003f;
         public float ScrollZoomSpeed = 0.15f;
         public float MinScale = 0.05f;
-        public float MaxScale = 3.0f;
+        public float MaxScale = 10.0f;
 
         [Header("Suavizado (Inercia)")]
         public float SmoothDamping = 12f;
