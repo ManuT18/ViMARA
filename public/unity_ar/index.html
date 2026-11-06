@@ -177,30 +177,110 @@
         }
         loadingCover.style.display = "";
 
-        window.zappar = ZCV.initialize();
-
-        // Watchdog del elemento <video> de la cámara móvil para evitar que iOS/Android pausen el stream
-        (function installCameraVideoWatchdog() {
-            function ensureCameraVideosPlaying() {
-                if (document.visibilityState && document.visibilityState !== "visible") return;
-                var videos = document.getElementsByTagName("video");
-                for (var i = 0; i < videos.length; i++) {
-                    var v = videos[i];
-                    v.playsInline = true;
-                    v.muted = true;
-                    if (!v.hasAttribute("playsinline")) v.setAttribute("playsinline", "");
+        // 1. Interceptar elementos <video> creados en memoria por zappar-cv.js ANTES de inicializar ZCV.
+        // zappar-cv.js crea el <video> mediante document.createElement("video") sin insertarlo en el DOM,
+        // lo que provoca que móviles (iOS Safari / Android Chrome) congelen la decodificación de frames
+        // tras unos segundos y que document.getElementsByTagName("video") devuelva una lista vacía.
+        var trackedCameraVideos = [];
+        (function interceptOffDomCameraVideos() {
+            var origCreateElement = document.createElement.bind(document);
+            function prepareCameraVideo(v) {
+                if (!v || trackedCameraVideos.indexOf(v) !== -1) return;
+                trackedCameraVideos.push(v);
+                v.playsInline = true;
+                v.muted = true;
+                v.autoplay = true;
+                v.setAttribute("playsinline", "");
+                v.setAttribute("webkit-playsinline", "");
+                v.setAttribute("muted", "");
+                v.style.cssText = "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0.001;pointer-events:none;z-index:-1;";
+                function autoResume() {
+                    if (document.visibilityState === "hidden") return;
                     if (v.paused && v.srcObject) {
                         v.play().catch(function () {});
                     }
                 }
+                v.addEventListener("pause", autoResume);
+                v.addEventListener("suspend", autoResume);
+                v.addEventListener("stalled", autoResume);
+                v.addEventListener("waiting", autoResume);
+                if (!v.isConnected && document.body) {
+                    document.body.appendChild(v);
+                }
+            }
+            document.createElement = function (tagName, options) {
+                var el = origCreateElement(tagName, options);
+                if (typeof tagName === "string" && tagName.toLowerCase() === "video") {
+                    prepareCameraVideo(el);
+                }
+                return el;
+            };
+        })();
+
+        window.zappar = ZCV.initialize();
+
+        // 2. Proteger las llamadas WebGL del pipeline de Zappar frente a excepciones transitorias
+        // para que un error puntual de textura de cámara nunca aborte el bucle requestAnimationFrame de Unity.
+        (function wrapZapparPipelineSafety(z) {
+            if (!z) return;
+            ["pipeline_process_gl", "pipeline_camera_frame_upload_gl", "pipeline_frame_update"].forEach(function (fnName) {
+                if (typeof z[fnName] === "function") {
+                    var origFn = z[fnName].bind(z);
+                    z[fnName] = function (pipeline) {
+                        try {
+                            return origFn(pipeline);
+                        } catch (err) {
+                            console.warn("[ViMARA AR] Error transitorio recuperado en " + fnName + ":", err);
+                        }
+                    };
+                }
+            });
+        })(window.zappar);
+
+        // 3. Watchdog periódico y por eventos sobre todos los videos de cámara (en DOM y en memoria)
+        (function installCameraVideoWatchdog() {
+            function ensureCameraVideosPlaying() {
+                if (document.visibilityState && document.visibilityState !== "visible") return;
+                var domVideos = document.getElementsByTagName("video");
+                for (var d = 0; d < domVideos.length; d++) {
+                    if (trackedCameraVideos.indexOf(domVideos[d]) === -1) {
+                        trackedCameraVideos.push(domVideos[d]);
+                    }
+                }
+                for (var i = 0; i < trackedCameraVideos.length; i++) {
+                    var v = trackedCameraVideos[i];
+                    if (!v) continue;
+                    v.playsInline = true;
+                    v.muted = true;
+                    if (!v.hasAttribute("playsinline")) v.setAttribute("playsinline", "");
+                    if (!v.isConnected && document.body) {
+                        v.style.cssText = "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0.001;pointer-events:none;z-index:-1;";
+                        document.body.appendChild(v);
+                    }
+                    if (v.srcObject) {
+                        var tracks = v.srcObject.getVideoTracks ? v.srcObject.getVideoTracks() : [];
+                        for (var t = 0; t < tracks.length; t++) {
+                            if (!tracks[t].enabled) tracks[t].enabled = true;
+                        }
+                        if (v.paused) {
+                            v.play().catch(function () {});
+                        }
+                    }
+                }
             }
 
-            setInterval(ensureCameraVideosPlaying, 1500);
+            setInterval(ensureCameraVideosPlaying, 1000);
             document.addEventListener("visibilitychange", ensureCameraVideosPlaying);
             window.addEventListener("focus", ensureCameraVideosPlaying);
             window.addEventListener("pageshow", ensureCameraVideosPlaying);
             window.addEventListener("touchstart", ensureCameraVideosPlaying, { passive: true });
+            window.addEventListener("touchend", ensureCameraVideosPlaying, { passive: true });
         })();
+
+        canvas.addEventListener("webglcontextlost", function (e) {
+            e.preventDefault();
+            console.warn("[ViMARA AR] Contexto WebGL perdido; esperando restauración del navegador.");
+        }, false);
 
         const script = document.createElement("script");
         script.src = loaderUrl;

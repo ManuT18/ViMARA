@@ -8,7 +8,9 @@ namespace ViMARA.AR
     /// <summary>
     /// Gestiona el modo activo de Realidad Aumentada (Superficie vs Marcador)
     /// y coordina la carga del modelo 3D seleccionado desde la URL inicial o vía mensajes desde React.
+    /// Se ejecuta con prioridad (-100) para desactivar el tracker inactivo antes de su inicialización nativa.
     /// </summary>
+    [DefaultExecutionOrder(-100)]
     public class ARTrackingModeSwitcher : MonoBehaviour
     {
         private const string DefaultPresetPayload = "preset:house|preset";
